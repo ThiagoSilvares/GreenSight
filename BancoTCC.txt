@@ -1,0 +1,61 @@
+Banco TCC:
+
+-- CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- CREATE TABLE bueiros (
+--   id SERIAL PRIMARY KEY,
+--   status VARCHAR(30) NOT NULL,         
+--   percentual_obstrucao NUMERIC(5,2),             
+--   imagem_url TEXT,                     
+--   data_monitoramento TIMESTAMP DEFAULT NOW(),
+--   localizacao GEOMETRY(Point, 4326)    
+-- );
+
+
+-- CREATE OR REPLACE VIEW resumo_bueiros AS
+-- SELECT
+--   COUNT(*) AS total_monitorados,
+--   COUNT(*) FILTER (WHERE status = 'obstruido') AS bueiros_obstruidos,
+--   COUNT(*) FILTER (WHERE status = 'livre') AS bueiros_livres,
+--   COUNT(*) FILTER (WHERE status = 'nao_analisado') AS bueiros_nao_analisados,
+--   ROUND((COUNT(*) FILTER (WHERE status = 'obstruido') * 100.0) / NULLIF(COUNT(*), 0), 2) AS percentual_obstrucao,
+--   ROUND((COUNT(*) FILTER (WHERE status = 'livre') * 100.0) / NULLIF(COUNT(*), 0), 2) AS percentual_melhoria
+-- FROM bueiros;
+
+
+
+-- #DADOS FICTÍCIOS#
+-- INSERT INTO bueiros (status, data_monitoramento)
+-- VALUES 
+--   ('livre', CURRENT_DATE),
+--   ('obstruido', CURRENT_DATE),
+--   ('nao_analisado', CURRENT_DATE),
+--   ('livre', CURRENT_DATE),
+--   ('obstruido', CURRENT_DATE);
+
+-- #APAGAR DADOS FICTÍCIOS#
+-- DELETE FROM bueiros;
+
+-- #VER A TABELA##
+-- SELECT * FROM resumo_bueiros;
+
+-----------------------------------------------------------
+
+-- #LOGIN#
+-- CREATE TABLE usuarios (
+--  id SERIAL PRIMARY KEY,
+--  email VARCHAR(100) UNIQUE NOT NULL,
+--  senha VARCHAR(100) NOT NULL,
+--  nome VARCHAR(100)
+-- );
+
+-- #CRIAR USUÁRIOS#
+-- INSERT INTO usuarios (email, senha, nome)
+-- VALUES ('silvares@admgreensight.com', '#1234s', 'Administrador');
+
+-- INSERT INTO usuarios (email, senha, nome)
+-- VALUES ('silvares@funcgreensight.com', '#1234s', 'Funcionário');
+
+-- #APAGAR USUÁRIO#
+-- DELETE FROM usuarios WHERE email = 'silvares@funcgreensight.com';
+

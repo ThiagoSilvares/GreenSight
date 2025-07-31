@@ -1,0 +1,15 @@
+Comandos:
+
+- npx create-react-app green-sight
+- npm install 
+- npm install react-router-dom
+- npm install -D tailwindcss postcss autoprefixer
+- npx tailwindcss init -p
+- npm install react-icons
+- npm install react-scroll --legacy-peer-deps
+- npm install express pg cors
+
+Rodar:
+
+- yarn start
+- node backend/index.js
