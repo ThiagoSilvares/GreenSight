@@ -133,7 +133,7 @@ const CadastroBueiros = () => {
               onChange={handleChange}
               className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value="livre">Limpo</option>
+              <option value="limpo">Limpo</option>
               <option value="obstruido">Obstruído</option>
               <option value="nao_analisado">Não Analisado</option>
             </select>

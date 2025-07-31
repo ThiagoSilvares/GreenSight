@@ -1,13 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-const bueirosRoutes = require('./routes/bueiros');
-app.use('/api', bueirosRoutes);
 
 const pool = new Pool({
   user: 'postgres',
@@ -17,15 +15,13 @@ const pool = new Pool({
   port: 5432,
 });
 
-app.get('/api/resumo', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM resumo_bueiros');
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Erro ao buscar resumo:', err);
-    res.status(500).send('Erro ao buscar resumo');
-  }
+app.use((req, res, next) => {
+  req.pool = pool;
+  next();
 });
+
+const bueirosRoutes = require('./routes/bueiros');
+app.use('/api', bueirosRoutes);
 
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
@@ -47,6 +43,38 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.get('/api/resumo', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM resumo_bueiros');
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao buscar resumo:', err);
+    res.status(500).send('Erro ao buscar resumo');
+  }
+});
+
+app.get('/api/bueiros', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id,
+        status,
+        imagem_url,
+        percentual_obstrucao,
+        data_monitoramento,
+        ST_Y(localizacao) AS latitude,
+        ST_X(localizacao) AS longitude
+      FROM bueiros
+      WHERE localizacao IS NOT NULL
+      ORDER BY id DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar bueiros:', err);
+    res.status(500).send('Erro ao buscar bueiros');
+  }
+});
+
 app.listen(3001, () => {
-  console.log('Servidor rodando em http://localhost:3001');
+  console.log('🚀 Servidor rodando em http://localhost:3001');
 });

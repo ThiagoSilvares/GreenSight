@@ -12,19 +12,39 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
 
   try {
     if (!latitude || !longitude || !status || !imagem) {
-      return res.status(400).json({ erro: 'Todos os campos são obrigatórios, inclusive a imagem.' });
+      return res.status(400).json({
+        erro: 'Todos os campos são obrigatórios, inclusive a imagem.'
+      });
     }
 
     const result = await pool.query(
       `
-      INSERT INTO bueiros (status, percentual_obstrucao, imagem, localizacao)
-      VALUES ($1, NULL, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326))
-      RETURNING *
+      INSERT INTO bueiros (
+        status,
+        percentual_obstrucao,
+        imagem,
+        localizacao,
+        data_monitoramento
+      )
+      VALUES (
+        $1,
+        NULL,
+        $2,
+        ST_SetSRID(ST_MakePoint($3, $4), 4326),
+        NOW()
+      )
+      RETURNING 
+        id,
+        status,
+        percentual_obstrucao,
+        data_monitoramento,
+        ST_Y(localizacao) AS latitude,
+        ST_X(localizacao) AS longitude
       `,
       [
         status,
         imagem,
-        parseFloat(longitude),
+        parseFloat(longitude), 
         parseFloat(latitude)
       ]
     );

@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const [dadosResumo, setDadosResumo] = useState(null);
   const [usuario, setUsuario] = useState(null);
+  const [bueirosMapa, setBueirosMapa] = useState([]);
   const navigate = useNavigate();
 
   const opcoes = ['Administrador', 'Funcionário'];
@@ -43,6 +44,13 @@ const Dashboard = () => {
       .then((res) => res.json())
       .then((data) => setDadosResumo(data))
       .catch((err) => console.error('Erro ao buscar dados:', err));
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/bueiros')
+      .then((res) => res.json())
+      .then((data) => setBueirosMapa(data))
+      .catch((err) => console.error('Erro ao buscar bueiros do mapa:', err));
   }, []);
 
   const handleLogout = () => {
@@ -137,7 +145,7 @@ const Dashboard = () => {
                           } ${opcao === papel ? 'bg-zinc-700 font-semibold' : ''}`}
                           onClick={() => {
                             if (isDesativado) {
-                              alert('Você não tem permissão para realizar esta ação.');
+                              // alert('Você não tem permissão para realizar esta ação.');
                               return;
                             }
                             setPapel(opcao);
@@ -155,7 +163,7 @@ const Dashboard = () => {
           </div>
 
           <div className="bg-zinc-800 rounded-lg overflow-hidden relative z-0">
-            <MapComponent bueiros={dadosResumo?.bueiros || []} />
+            <MapComponent bueiros={bueirosMapa} />
           </div>
 
           <div className="mt-6 flex justify-center space-x-6 text-sm text-zinc-300">
@@ -173,7 +181,7 @@ const Dashboard = () => {
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {dadosResumo ? (
               [
-                ['Bueiros Limpos', dadosResumo.bueiros_livres],
+                ['Bueiros Limpos', dadosResumo.bueiros_limpos],
                 ['Bueiros com Obstrução', dadosResumo.bueiros_obstruidos],
                 ['Bueiros Não Analisados', dadosResumo.bueiros_nao_analisados ?? 0],
                 ['Total de Bueiros Monitorados', dadosResumo.total_monitorados],
