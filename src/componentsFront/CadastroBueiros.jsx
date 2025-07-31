@@ -4,6 +4,7 @@ import {
   FaChartLine,
   FaSyncAlt,
   FaMapMarkerAlt,
+  FaArrowLeft,
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
@@ -14,9 +15,9 @@ const CadastroBueiros = () => {
     latitude: '',
     longitude: '',
     status: 'nao_analisado',
-    imagem_url: '',
   });
 
+  const [imagem, setImagem] = useState(null);
   const [mensagem, setMensagem] = useState('');
 
   const handleChange = (e) => {
@@ -24,13 +25,23 @@ const CadastroBueiros = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImagemChange = (e) => {
+    setImagem(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const data = new FormData();
+    data.append('latitude', formData.latitude);
+    data.append('longitude', formData.longitude);
+    data.append('status', formData.status);
+    data.append('imagem', imagem);
+
     try {
       const resposta = await fetch('http://localhost:3001/api/bueiros', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: data,
       });
 
       if (resposta.ok) {
@@ -39,8 +50,8 @@ const CadastroBueiros = () => {
           latitude: '',
           longitude: '',
           status: 'nao_analisado',
-          imagem_url: '',
         });
+        setImagem(null);
       } else {
         setMensagem('Erro ao cadastrar bueiro.');
       }
@@ -66,7 +77,17 @@ const CadastroBueiros = () => {
         </nav>
       </header>
 
-      <main className="pt-28 px-8 max-w-3xl mx-auto">
+      <div className="pt-24 pl-16">
+        <Link
+            to="/dashboard"
+            className="absolute top-32 left-16 text-lg flex items-center border-b border-white hover:border-green-500 transition-all"
+        >
+            <FaArrowLeft className="text-white mr-2" />
+            <span className="text-white font-medium">Voltar</span>
+        </Link>
+      </div>
+
+      <main className="pt-8 px-8 max-w-3xl mx-auto">
         <h1 className="text-3xl md:text-4xl font-bold mb-8">Cadastro de Bueiros</h1>
 
         {mensagem && (
@@ -78,6 +99,7 @@ const CadastroBueiros = () => {
         <form
           onSubmit={handleSubmit}
           className="bg-zinc-800 p-8 rounded-lg shadow-md space-y-6"
+          encType="multipart/form-data"
         >
           <div>
             <label className="block mb-1 text-zinc-300">Latitude</label>
@@ -111,21 +133,19 @@ const CadastroBueiros = () => {
               onChange={handleChange}
               className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value="limpo">Limpo</option>
+              <option value="livre">Limpo</option>
               <option value="obstruido">Obstruído</option>
               <option value="nao_analisado">Não Analisado</option>
             </select>
           </div>
 
           <div>
-            <label className="block mb-1 text-zinc-300">Imagem (URL ou nome do arquivo)</label>
+            <label className="block mb-1 text-zinc-300">Imagem do bueiro (arquivo)</label>
             <input
-              type="text"
-              name="imagem_url"
-              value={formData.imagem_url}
-              onChange={handleChange}
-              placeholder="Ex: bueiro123.jpg ou https://..."
-              className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              type="file"
+              accept="image/*"
+              onChange={handleImagemChange}
+              className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700"
               required
             />
           </div>

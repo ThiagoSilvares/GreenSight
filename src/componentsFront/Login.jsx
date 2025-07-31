@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 import LogoGreenSight from '../assets/LogoGreenSight.png';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
@@ -44,7 +44,6 @@ const Login = () => {
         localStorage.setItem('usuarioLogado', 'true');
         localStorage.setItem('usuario', JSON.stringify(usuario));
 
-        console.log('Usuário logado:', usuario);
         navigate('/');
       } else {
         setErro(data.mensagem || 'Erro ao fazer login');
@@ -61,9 +60,9 @@ const Login = () => {
       <div className="hidden md:flex w-1/2 flex-col items-start justify-center relative bg-black px-10">
         <Link
           to="/"
-          className="absolute top-16 left-14 text-lg border-b-2 border-white flex items-center"
+          className="absolute top-16 left-14 text-lg flex items-center border-b border-white hover:border-green-500 transition-all"
         >
-          <span className="text-green-500 mr-2 text-xl">‹</span>
+          <FaArrowLeft className="text-white mr-2" />
           <span className="text-white font-medium">Voltar</span>
         </Link>
 

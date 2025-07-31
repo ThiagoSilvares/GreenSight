@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
 
 const MapComponent = ({ bueiros }) => {
   return (
-    <MapContainer center={[-23.55052, -46.633308]} zoom={13} style={{ height: '500px', width: '100%' }}>
+    <MapContainer center={[-23.64603, 	-46.57592]} zoom={16} style={{ height: '500px', width: '100%' }}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

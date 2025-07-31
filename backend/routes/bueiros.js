@@ -1,34 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const multer = require('multer');
 
-router.post('/bueiros', async (req, res) => {
-  const { latitude, longitude, status, imagem_url } = req.body;
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-  console.log("📥 Dados recebidos no backend:");
-  console.log({
-    latitude,
-    longitude,
-    status,
-    imagem_url,
-    latitudeType: typeof latitude,
-    longitudeType: typeof longitude
-  });
+router.post('/bueiros', upload.single('imagem'), async (req, res) => {
+  const { latitude, longitude, status } = req.body;
+  const imagem = req.file?.buffer;
 
   try {
-    if (!latitude || !longitude || !status || !imagem_url) {
-      return res.status(400).json({ erro: 'Campos obrigatórios ausentes.' });
+    if (!latitude || !longitude || !status || !imagem) {
+      return res.status(400).json({ erro: 'Todos os campos são obrigatórios, inclusive a imagem.' });
     }
 
     const result = await pool.query(
       `
-      INSERT INTO bueiros (status, percentual_obstrucao, imagem_url, localizacao)
+      INSERT INTO bueiros (status, percentual_obstrucao, imagem, localizacao)
       VALUES ($1, NULL, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326))
       RETURNING *
       `,
       [
         status,
-        imagem_url,
+        imagem,
         parseFloat(longitude),
         parseFloat(latitude)
       ]
@@ -36,6 +31,7 @@ router.post('/bueiros', async (req, res) => {
 
     console.log('✅ Bueiro cadastrado com sucesso:', result.rows[0]);
     res.status(201).json({ sucesso: true, bueiro: result.rows[0] });
+
   } catch (err) {
     console.error('❌ Erro ao cadastrar bueiro:', err.message);
     res.status(500).json({

@@ -39,6 +39,9 @@ Banco TCC:
 -- #VER A TABELA##
 -- SELECT * FROM resumo_bueiros;
 
+-- ALTER TABLE bueiros ADD COLUMN imagem BYTEA;
+
+
 -----------------------------------------------------------
 
 -- #LOGIN#
