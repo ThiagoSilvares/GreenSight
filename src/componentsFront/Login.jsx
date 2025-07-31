@@ -58,7 +58,6 @@ const Login = () => {
   return (
     <div className="min-h-screen flex bg-black text-white font-sans">
 
-      {/* Lado esquerdo com imagem + botão voltar */}
       <div className="hidden md:flex w-1/2 flex-col items-start justify-center relative bg-black px-10">
         <Link
           to="/"
@@ -77,10 +76,8 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Lado direito com logo e formulário */}
       <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-8 -mt-12">
 
-        {/* Logo com escrita com link para Home */}
         <Link to="/">
           <img
             src={LogoEscrita}

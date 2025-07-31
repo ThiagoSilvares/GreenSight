@@ -59,3 +59,14 @@ Banco TCC:
 -- #APAGAR USUÁRIO#
 -- DELETE FROM usuarios WHERE email = 'silvares@funcgreensight.com';
 
+
+--------------------------------------------------------------
+
+-- #VERIFICAR BUEIROS CADASTRADOS#
+-- SELECT id, status, imagem_url, ST_AsText(localizacao)
+-- FROM bueiros
+-- ORDER BY id DESC;
+
+-- #DELETAR BUEIROS CADASTRADOS#
+-- DELETE FROM bueiros;
+

@@ -8,10 +8,12 @@ import {
   FaFileAlt,
   FaSignOutAlt,
   FaBell,
+  FaPlus,
 } from 'react-icons/fa';
 import { FiBell } from 'react-icons/fi';
 import { IoChevronDown } from 'react-icons/io5';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
+import MapComponent from './MapComponent';
 
 const Dashboard = () => {
   const [notificacoesAtivas, setNotificacoesAtivas] = useState(false);
@@ -51,7 +53,6 @@ const Dashboard = () => {
 
   return (
     <div className="bg-black min-h-screen text-white font-sans">
-      {/* Navbar */}
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
         <Link to="/" className="focus:outline-none">
           <img
@@ -72,13 +73,20 @@ const Dashboard = () => {
       </header>
 
       <div className="pt-24 flex">
-        {/* Sidebar */}
         <div className={`${sidebarAberta ? 'w-64' : 'w-16'} bg-black transition-all duration-300 min-h-screen p-4`}>
           <button onClick={() => setSidebarAberta(!sidebarAberta)} className="mb-6 text-green-400">
             {sidebarAberta ? <FaTimes size={28} /> : <FaBars size={28} />}
           </button>
           {sidebarAberta && (
             <ul className="space-y-8 mt-6 text-lg">
+              {papel === 'Administrador' && (
+                <li
+                  onClick={() => navigate('/cadastro-bueiros')}
+                  className="hover:text-green-400 cursor-pointer flex items-center gap-3"
+                >
+                  <FaPlus size={20} /> Cadastro de Bueiros
+                </li>
+              )}
               <li className="hover:text-green-400 cursor-pointer flex items-center gap-3">
                 <FaFileAlt size={20} /> Relatórios
               </li>
@@ -92,7 +100,6 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Conteúdo */}
         <main className="flex-1 p-10">
           <div className="flex justify-between items-center mb-12">
             <h1 className="text-3xl md:text-5xl font-bold">Dashboard de Monitoramento</h1>
@@ -106,7 +113,6 @@ const Dashboard = () => {
                 {notificacoesAtivas ? <FaBell size={22} /> : <FiBell size={22} />}
               </button>
 
-              {/* Menu de papel */}
               <div className="relative">
                 <button
                   onClick={() => setMenuAberto(!menuAberto)}
@@ -115,7 +121,7 @@ const Dashboard = () => {
                   {papel} <IoChevronDown size={16} />
                 </button>
                 {menuAberto && (
-                  <ul className="absolute right-0 mt-1 w-40 bg-zinc-800 shadow-lg rounded-md text-white text-sm z-10">
+                  <ul className="absolute right-0 mt-1 w-40 bg-zinc-800 shadow-lg rounded-md text-white text-sm z-50">
                     {opcoes.map((opcao) => {
                       const isFuncionario = usuario?.email?.endsWith('@funcgreensight.com');
                       const isAdministrador = opcao === 'Administrador';
@@ -148,12 +154,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Espaço para o mapa */}
-          <div className="bg-zinc-800 h-[500px] rounded-lg flex items-center justify-center text-zinc-400 text-xl italic">
-            Espaço reservado para o mapa interativo
+          <div className="bg-zinc-800 rounded-lg overflow-hidden relative z-0">
+            <MapComponent bueiros={dadosResumo?.bueiros || []} />
           </div>
 
-          {/* Legenda */}
           <div className="mt-6 flex justify-center space-x-6 text-sm text-zinc-300">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-green-500"></span> Bueiros Limpos
@@ -166,7 +170,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Informações */}
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {dadosResumo ? (
               [
@@ -192,7 +195,6 @@ const Dashboard = () => {
         </main>
       </div>
 
-      {/* Rodapé */}
       <footer className="bg-black text-gray-400 text-sm py-6 border-t border-gray-700 px-6 mt-8">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">
           <div className="text-left">

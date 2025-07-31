@@ -11,7 +11,6 @@ const Home = () => {
   return (
     <div className="bg-black text-white min-h-screen font-sans">
 
-      {/* Navbar */}
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
         <button onClick={() => scroll.scrollToTop()} className="focus:outline-none">
           <img
@@ -38,7 +37,6 @@ const Home = () => {
         </nav>
       </header>
 
-      {/* Hero */}
       <section className="text-center px-6 pt-32 pb-8 md:pt-40 md:pb-8 max-w-5xl mx-auto">
         <h2 className="text-4xl md:text-6xl font-extrabold mb-6 leading-snug">
           Monitoramento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras.
@@ -60,7 +58,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 px-6 pt-0 pb-16 max-w-6xl mx-auto text-black">
         <div className="bg-white rounded-md shadow-md p-6 text-center">
           <h3 className="text-lg font-bold mb-2">Prevenção Ativa</h3>
@@ -82,7 +79,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Desafio dos Resíduos Urbanos */}
       <section className="bg-black text-white px-6 py-16 max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-8">
         <div className="lg:w-1/2">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -105,7 +101,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Tecnologia */}
       <section id="tecnologia" className="bg-black text-white px-6 py-16 max-w-6xl mx-auto">
         <h2 className="text-center text-3xl md:text-4xl font-bold mb-12">
           A Tecnologia por trás do Green Sight
@@ -134,7 +129,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Contato */}
       <section className="bg-black text-white px-6 py-16 max-w-4xl mx-auto text-center">
         <h2 className="text-2xl md:text-3xl font-bold mb-4">Faça Parte da Mudança!</h2>
         <p className="text-gray-300 mb-8">
@@ -165,7 +159,6 @@ const Home = () => {
         </form>
       </section>
 
-      {/* Rodapé */}
       <footer className="bg-black text-gray-400 text-sm py-6 border-t border-gray-700 px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">
           <div className="text-left">

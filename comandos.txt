@@ -8,6 +8,9 @@ Comandos:
 - npm install react-icons
 - npm install react-scroll --legacy-peer-deps
 - npm install express pg cors
+- yarn add react-leaflet leaflet
+- npm install react-leaflet@4.2.1 leaflet@1.9.4 --legacy-peer-deps
+
 
 Rodar:
 

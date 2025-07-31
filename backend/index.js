@@ -1,4 +1,3 @@
-// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -7,7 +6,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuração do banco de dados
+const bueirosRoutes = require('./routes/bueiros');
+app.use('/api', bueirosRoutes);
+
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
@@ -16,7 +17,6 @@ const pool = new Pool({
   port: 5432,
 });
 
-// Rota de resumo dos bueiros
 app.get('/api/resumo', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM resumo_bueiros');
@@ -27,7 +27,6 @@ app.get('/api/resumo', async (req, res) => {
   }
 });
 
-// Rota de login de usuário
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
 
@@ -48,7 +47,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Inicializa o servidor
 app.listen(3001, () => {
   console.log('Servidor rodando em http://localhost:3001');
 });
