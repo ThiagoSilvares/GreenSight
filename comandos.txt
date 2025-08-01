@@ -11,6 +11,7 @@ Comandos:
 - yarn add react-leaflet leaflet
 - npm install react-leaflet@4.2.1 leaflet@1.9.4 --legacy-peer-deps
 - npm install multer --legacy-peer-deps
+- yarn add axios
 
 Rodar:
 

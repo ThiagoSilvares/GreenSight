@@ -10,6 +10,7 @@ import Home from './componentsFront/Home';
 import Login from './componentsFront/Login';
 import Dashboard from './componentsFront/Dashboard';
 import CadastroBueiros from './componentsFront/CadastroBueiros';
+import AtualizarStatus from './componentsFront/AtualizarStatus';
 
 const PrivateRoute = ({ element }) => {
   const isUsuarioLogado = !!localStorage.getItem('usuarioLogado');
@@ -21,17 +22,19 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-
         <Route path="/login" element={<Login />} />
 
         <Route
           path="/dashboard"
           element={<PrivateRoute element={<Dashboard />} />}
         />
-
         <Route
           path="/cadastro-bueiros"
           element={<PrivateRoute element={<CadastroBueiros />} />}
+        />
+        <Route
+          path="/atualizar-status" 
+          element={<PrivateRoute element={<AtualizarStatus />} />}
         />
       </Routes>
     </Router>

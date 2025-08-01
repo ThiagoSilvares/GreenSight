@@ -44,7 +44,7 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
       [
         status,
         imagem,
-        parseFloat(longitude), 
+        parseFloat(longitude),
         parseFloat(latitude)
       ]
     );
@@ -56,6 +56,46 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
     console.error('❌ Erro ao cadastrar bueiro:', err.message);
     res.status(500).json({
       erro: 'Erro ao cadastrar bueiro.',
+      detalhe: err.message
+    });
+  }
+});
+
+router.put('/bueiros/atualizar-status', async (req, res) => {
+  const { latitude, longitude, status } = req.body;
+
+  try {
+    if (!latitude || !longitude || !status) {
+      return res.status(400).json({ erro: 'Latitude, longitude e novo status são obrigatórios.' });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE bueiros
+      SET status = $1
+      WHERE ST_Y(localizacao) = $2 AND ST_X(localizacao) = $3
+      RETURNING 
+        id,
+        status,
+        percentual_obstrucao,
+        data_monitoramento,
+        ST_Y(localizacao) AS latitude,
+        ST_X(localizacao) AS longitude
+      `,
+      [status, parseFloat(latitude), parseFloat(longitude)]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ erro: 'Bueiro não encontrado para atualização.' });
+    }
+
+    console.log('🔄 Status atualizado com sucesso:', result.rows[0]);
+    res.json({ sucesso: true, bueiro: result.rows[0] });
+
+  } catch (err) {
+    console.error('❌ Erro ao atualizar status do bueiro:', err.message);
+    res.status(500).json({
+      erro: 'Erro ao atualizar status.',
       detalhe: err.message
     });
   }

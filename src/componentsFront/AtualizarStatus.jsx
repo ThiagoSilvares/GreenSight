@@ -1,80 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FaChartLine,
   FaSyncAlt,
-  FaMapMarkerAlt,
+  FaEdit,
   FaArrowLeft,
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
-const CadastroBueiros = () => {
-  const navigate = useNavigate();
-
+const AtualizarStatus = () => {
   const [formData, setFormData] = useState({
     latitude: '',
     longitude: '',
     status: '',
   });
 
-  const [imagem, setImagem] = useState(null);
   const [mensagem, setMensagem] = useState('');
-  const [bueirosExistentes, setBueirosExistentes] = useState([]);
-
-  useEffect(() => {
-    fetch('http://localhost:3001/api/bueiros')
-      .then(res => res.json())
-      .then(data => setBueirosExistentes(data))
-      .catch(err => console.error('Erro ao buscar bueiros existentes:', err));
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImagemChange = (e) => {
-    setImagem(e.target.files[0]);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const bueiroDuplicado = bueirosExistentes.some(b =>
-      Number(b.latitude) === Number(formData.latitude) &&
-      Number(b.longitude) === Number(formData.longitude)
-    );
-
-    if (bueiroDuplicado) {
-      setMensagem('Este bueiro já está cadastrado.');
-      return;
-    }
-
-    const data = new FormData();
-    data.append('latitude', formData.latitude);
-    data.append('longitude', formData.longitude);
-    data.append('status', formData.status);
-    data.append('imagem', imagem);
-
     try {
-      const resposta = await fetch('http://localhost:3001/api/bueiros', {
-        method: 'POST',
-        body: data,
+      const resposta = await fetch('http://localhost:3001/api/bueiros/atualizar-status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
 
       if (resposta.ok) {
-        setMensagem('Bueiro cadastrado com sucesso!');
+        setMensagem('Status atualizado com sucesso!');
         setFormData({
           latitude: '',
           longitude: '',
-          status: 'nao_analisado',
+          status: '',
         });
-        setImagem(null);
-        const atualizados = await fetch('http://localhost:3001/api/bueiros');
-        const dadosAtualizados = await atualizados.json();
-        setBueirosExistentes(dadosAtualizados);
+      } else if (resposta.status === 404) {
+        setMensagem('Não é possível atualizar o status de um bueiro não cadastrado.');
       } else {
-        setMensagem('Erro ao cadastrar bueiro.');
+        setMensagem('Erro ao atualizar status.');
       }
     } catch (err) {
       console.error(err);
@@ -109,7 +77,7 @@ const CadastroBueiros = () => {
       </div>
 
       <main className="pt-8 px-8 max-w-3xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-8">Cadastro de Bueiros</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-8">Atualizar Status de Bueiro</h1>
 
         {mensagem && (
           <p className={`mb-4 text-sm ${mensagem.includes('sucesso') ? 'text-green-400' : 'text-red-400'}`}>
@@ -120,7 +88,6 @@ const CadastroBueiros = () => {
         <form
           onSubmit={handleSubmit}
           className="bg-zinc-800 p-8 rounded-lg shadow-md space-y-6"
-          encType="multipart/form-data"
         >
           <div>
             <label className="block mb-1 text-zinc-300">Latitude</label>
@@ -147,7 +114,7 @@ const CadastroBueiros = () => {
           </div>
 
           <div>
-            <label className="block mb-1 text-zinc-300">Status</label>
+            <label className="block mb-1 text-zinc-300">Novo Status</label>
             <select
               name="status"
               value={formData.status}
@@ -162,22 +129,11 @@ const CadastroBueiros = () => {
             </select>
           </div>
 
-          <div>
-            <label className="block mb-1 text-zinc-300">Imagem do bueiro (arquivo)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImagemChange}
-              className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700"
-              required
-            />
-          </div>
-
           <button
             type="submit"
             className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded flex items-center justify-center gap-2 transition-all duration-300"
           >
-            <FaMapMarkerAlt /> Cadastrar Bueiro
+            <FaEdit /> Atualizar Status
           </button>
         </form>
       </main>
@@ -201,4 +157,4 @@ const CadastroBueiros = () => {
   );
 };
 
-export default CadastroBueiros;
+export default AtualizarStatus;

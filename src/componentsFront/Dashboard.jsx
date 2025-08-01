@@ -9,6 +9,7 @@ import {
   FaSignOutAlt,
   FaBell,
   FaPlus,
+  FaEdit,
 } from 'react-icons/fa';
 import { FiBell } from 'react-icons/fi';
 import { IoChevronDown } from 'react-icons/io5';
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const [dadosResumo, setDadosResumo] = useState(null);
   const [usuario, setUsuario] = useState(null);
   const [bueirosMapa, setBueirosMapa] = useState([]);
+  const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
   const navigate = useNavigate();
 
   const opcoes = ['Administrador', 'Funcionário'];
@@ -63,11 +65,7 @@ const Dashboard = () => {
     <div className="bg-black min-h-screen text-white font-sans">
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
         <Link to="/" className="focus:outline-none">
-          <img
-            src={LogoEscrita}
-            alt="Logo Escrita Green Sight"
-            className="h-14 w-auto object-contain cursor-pointer"
-          />
+          <img src={LogoEscrita} alt="Logo Escrita Green Sight" className="h-14 w-auto object-contain cursor-pointer" />
         </Link>
 
         <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100">
@@ -95,11 +93,19 @@ const Dashboard = () => {
                   <FaPlus size={20} /> Cadastro de Bueiros
                 </li>
               )}
+              {(papel === 'Administrador' || papel === 'Funcionário') && (
+                <li
+                  onClick={() => navigate('/atualizar-status')}
+                  className="hover:text-green-400 cursor-pointer flex items-center gap-3"
+                >
+                  <FaEdit size={20} /> Atualizar Status
+                </li>
+              )}
               <li className="hover:text-green-400 cursor-pointer flex items-center gap-3">
                 <FaFileAlt size={20} /> Relatórios
               </li>
               <li
-                onClick={handleLogout}
+                onClick={() => setMostrarConfirmacaoLogout(true)}
                 className="hover:text-green-400 cursor-pointer flex items-center gap-3"
               >
                 <FaSignOutAlt size={20} /> Sair
@@ -113,9 +119,7 @@ const Dashboard = () => {
             <h1 className="text-3xl md:text-5xl font-bold">Dashboard de Monitoramento</h1>
             <div className="flex items-center space-x-4">
               <button
-                className={`text-xl p-2 rounded hover:bg-zinc-800 transition ${
-                  notificacoesAtivas ? 'text-green-400' : ''
-                }`}
+                className={`text-xl p-2 rounded hover:bg-zinc-800 transition ${notificacoesAtivas ? 'text-green-400' : ''}`}
                 onClick={() => setNotificacoesAtivas(!notificacoesAtivas)}
               >
                 {notificacoesAtivas ? <FaBell size={22} /> : <FiBell size={22} />}
@@ -144,10 +148,7 @@ const Dashboard = () => {
                               : 'cursor-pointer hover:bg-zinc-700'
                           } ${opcao === papel ? 'bg-zinc-700 font-semibold' : ''}`}
                           onClick={() => {
-                            if (isDesativado) {
-                              // alert('Você não tem permissão para realizar esta ação.');
-                              return;
-                            }
+                            if (isDesativado) return;
                             setPapel(opcao);
                             setMenuAberto(false);
                           }}
@@ -202,6 +203,31 @@ const Dashboard = () => {
           </div>
         </main>
       </div>
+
+      {mostrarConfirmacaoLogout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-zinc-900 p-6 rounded-lg shadow-lg text-center">
+            <p className="text-white text-lg mb-4">Deseja realmente encerrar sua sessão?</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMostrarConfirmacaoLogout(false);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              >
+                Sim
+              </button>
+              <button
+                onClick={() => setMostrarConfirmacaoLogout(false)}
+                className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded"
+              >
+                Não
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="bg-black text-gray-400 text-sm py-6 border-t border-gray-700 px-6 mt-8">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">

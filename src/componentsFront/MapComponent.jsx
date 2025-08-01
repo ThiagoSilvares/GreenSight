@@ -63,9 +63,11 @@ const MapComponent = ({ bueiros }) => {
                 {data_monitoramento && (
                   <>
                     <strong>Data:</strong>{' '}
-                    {new Date(data_monitoramento).toLocaleDateString('pt-BR')}
+                    {new Date(data_monitoramento).toLocaleDateString('pt-BR')} <br />
                   </>
                 )}
+                <strong>Latitude:</strong> {latitude} <br />
+                <strong>Longitude:</strong> {longitude}
               </div>
             </Popup>
           </Marker>
