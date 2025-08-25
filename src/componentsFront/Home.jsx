@@ -42,8 +42,9 @@ const Home = () => {
           Monitoramento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras.
         </h2>
         <p className="text-gray-300 max-w-3xl mx-auto mb-8 text-sm md:text-base">
-          O Green Sight utiliza tecnologia de câmeras e análise de dados para monitorar bueiros em tempo real,
-          prevenindo enchentes, otimizando a limpeza urbana e promovendo o bem-estar social e a harmonia com a natureza.
+          O Green Sight utiliza tecnologia de câmeras e análise de dados para o mapeamento de bueiros em tempo real, 
+          possibilitando a atualização manual do estado de cada uma das unidades monitoradas. A partir disso, constrói-se uma base geoespacial confiável, 
+          que apoia a prevenção de enchentes, o planejamento urbano e a gestão sustentável das cidades.
         </p>
         <div className="my-8">
           <ScrollLink
@@ -60,21 +61,21 @@ const Home = () => {
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 px-6 pt-0 pb-16 max-w-6xl mx-auto text-black">
         <div className="bg-white rounded-md shadow-md p-6 text-center">
-          <h3 className="text-lg font-bold mb-2">Prevenção Ativa</h3>
+          <h3 className="text-lg font-bold mb-2">Mapeamento Inteligente</h3>
           <p className="text-sm">
-            Identificação de bueiros com risco de entupimento a fim de evitar alagamentos e transtornos.
+            Localização precisa de bueiros ao longo das vias públicas, oferecendo uma visão clara e ampla da infraestrutura existente, e orientando de forma estratégica as ações de manutenção.
           </p>
         </div>
         <div className="bg-white rounded-md shadow-md p-6 text-center">
           <h3 className="text-lg font-bold mb-2">Dados para Ação</h3>
           <p className="text-sm">
-            Fornecemos dashboards claros para que as equipes de limpeza atuem com máxima eficiência e planejamento.
+            Disponibilização de mapas e dashboards com a finalidade de auxiliar gestores e equipes técnicas a atuarem com maior eficiência e planejamento estratégico.
           </p>
         </div>
         <div className="bg-white rounded-md shadow-md p-6 text-center">
-          <h3 className="text-lg font-bold mb-2">Transparência Cidadã</h3>
+          <h3 className="text-lg font-bold mb-2">Gestão Estratégica</h3>
           <p className="text-sm">
-            Moradores podem acompanhar o status da sua região, promovendo uma comunidade mais engajada e informada.
+            Disponibilização da localização e do estado atualizado dos bueiros, promovendo engajamento social e fortalecimento da consciência ambiental coletiva.
           </p>
         </div>
       </section>
@@ -109,22 +110,22 @@ const Home = () => {
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
             <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Câmera</div>
             <h3 className="text-base font-semibold mb-2">Câmeras Inteligentes</h3>
-            <p className="text-sm">Instaladas em veículos, capturam imagens de alta resolução.</p>
+            <p className="text-sm">Instaladas em veículos a fim de registrar imagens das vias, possibilitando a detecção e o mapeamento preciso da localização dos bueiros.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
             <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">GPS Nuvem</div>
             <h3 className="text-base font-semibold mb-2">GPS e Armazenamento em Nuvem</h3>
-            <p className="text-sm">Localização precisa e dados seguros para análise.</p>
+            <p className="text-sm">Geolocalização via GPS integrada a armazenamento em nuvem, garantindo a associação das imagens às coordenadas exatas e à segurança dos dados coletados.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
             <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">IA</div>
             <h3 className="text-base font-semibold mb-2">Inteligência Artificial</h3>
-            <p className="text-sm">Algoritmos avançados analisam o nível de lixo nas imagens.</p>
+            <p className="text-sm">Algoritmos de visão computacional processam as imagens para identificar automaticamente a existência e posição dos bueiros, alimentando a base geoespacial do sistema.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
             <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Mapa</div>
             <h3 className="text-base font-semibold mb-2">Mapa Interativo</h3>
-            <p className="text-sm">Visualização clara de pontos críticos com ação imediata.</p>
+            <p className="text-sm">Os dados processados são exibidos em mapas que permitem a visualização da distribuição dos bueiros na cidade, servindo como base para atualizações manuais de estado.</p>
           </div>
         </div>
       </section>
