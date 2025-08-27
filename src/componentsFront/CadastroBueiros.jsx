@@ -92,8 +92,8 @@ const CadastroBueiros = () => {
           <Link to="/dashboard" className="hover:text-green-500 transition-all duration-200 font-bold">
             <FaChartLine className="inline mr-1" /> Dashboard
           </Link>
-          <Link to="/atualizacoes" className="hover:text-green-500 transition-all duration-200">
-            <FaSyncAlt className="inline mr-1" /> Atualizações
+          <Link to="/monitoramento-cidadao" className="hover:text-green-500 transition-all duration-200">
+            <FaSyncAlt className="inline mr-1" /> Monitoramento Cidadão
           </Link>
         </nav>
       </header>

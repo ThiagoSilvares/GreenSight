@@ -73,3 +73,22 @@ Banco TCC:
 -- #DELETAR BUEIROS CADASTRADOS#
 -- DELETE FROM bueiros;
 
+---------------------------------------------------------------
+
+-- #CRIAR TABELA DE RELATOS
+-- CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- CREATE TABLE IF NOT EXISTS public.relatos (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   author       TEXT        NOT NULL,
+--   comment      TEXT        NOT NULL,
+--   address      TEXT        NOT NULL,
+--   image_path   TEXT        NOT NULL,  
+--   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
+
+-- CREATE INDEX IF NOT EXISTS relatos_created_at_idx ON public.relatos (created_at DESC);
+
+-- ALTER TABLE public.usuarios
+-- ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
+

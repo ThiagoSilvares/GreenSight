@@ -7,6 +7,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
@@ -22,6 +24,9 @@ app.use((req, res, next) => {
 
 const bueirosRoutes = require('./routes/bueiros');
 app.use('/api', bueirosRoutes);
+
+const relatosRoutes = require('./routes/relatos');
+app.use('/api', relatosRoutes);
 
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;

@@ -11,6 +11,7 @@ import Login from './componentsFront/Login';
 import Dashboard from './componentsFront/Dashboard';
 import CadastroBueiros from './componentsFront/CadastroBueiros';
 import AtualizarStatus from './componentsFront/AtualizarStatus';
+import MonitoramentoCidadao from './componentsFront/MonitoramentoCidadao';
 
 const PrivateRoute = ({ element }) => {
   const isUsuarioLogado = !!localStorage.getItem('usuarioLogado');
@@ -23,6 +24,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/monitoramento-cidadao" element={<MonitoramentoCidadao />} />
 
         <Route
           path="/dashboard"

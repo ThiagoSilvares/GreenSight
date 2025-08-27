@@ -11,9 +11,7 @@ const Login = () => {
   const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
-  const togglePassword = () => {
-    setShowPassword(!showPassword);
-  };
+  const togglePassword = () => setShowPassword((v) => !v);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,26 +20,23 @@ const Login = () => {
     try {
       const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.sucesso) {
-        let papel = 'Funcionário';
-        if (email.includes('@admgreensight')) {
-          papel = 'Administrador';
-        }
+        const papel = email.includes('@admgreensight') ? 'Administrador' : 'Funcionário';
 
         const usuario = {
-          ...data.usuario,
+          email,
+          nome: data?.usuario?.nome || '',
           papel,
+          ...data?.usuario,
         };
 
-        localStorage.setItem('usuarioLogado', 'true');
+        localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
         localStorage.setItem('usuario', JSON.stringify(usuario));
 
         navigate('/');
@@ -56,7 +51,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex bg-black text-white font-sans">
-
       <div className="hidden md:flex w-1/2 flex-col items-start justify-center relative bg-black px-10">
         <Link
           to="/"
@@ -76,7 +70,6 @@ const Login = () => {
       </div>
 
       <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-8 -mt-12">
-
         <Link to="/">
           <img
             src={LogoEscrita}
@@ -125,9 +118,7 @@ const Login = () => {
             <a href="#" className="text-gray-300 underline">Esqueci minha senha</a>
           </div>
 
-          {erro && (
-            <div className="text-red-500 text-sm mt-2">{erro}</div>
-          )}
+          {erro && <div className="text-red-500 text-sm mt-2">{erro}</div>}
 
           <button
             type="submit"
