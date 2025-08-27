@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaUser, FaChartLine, FaSyncAlt, FaTrash } from "react-icons/fa";
+import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaTrash, FaChartBar } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
 const API = "http://localhost:3001/api";
 
-const MonitoramentoCidadao = () => {
+const Relatos = () => {
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
 
   const rawUser = localStorage.getItem("usuarioLogado");
@@ -167,6 +167,25 @@ const MonitoramentoCidadao = () => {
           />
         </Link>
         <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100 flex items-center">
+          {isUsuarioLogado && (
+            <Link
+              to="/mapa"
+              className={`${isActive("/mapa")} transition-all duration-200`}
+            >
+              <FaMapMarkedAlt className="inline mr-1" /> Mapa
+            </Link>
+          )}
+          <Link
+            to="/relatos"
+            className={`${isActive(
+              "/relatos"
+            )} transition-all duration-200`}
+          >
+            <FaRegCommentDots className="inline mr-1" /> Relatos
+          </Link>
+          <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
+            <FaChartBar className="inline mr-1" /> Gráficos
+          </Link>
           {!isUsuarioLogado && (
             <Link
               to="/login"
@@ -175,22 +194,6 @@ const MonitoramentoCidadao = () => {
               <FaUser className="inline mr-1" /> Login
             </Link>
           )}
-          {isUsuarioLogado && (
-            <Link
-              to="/dashboard"
-              className={`${isActive("/dashboard")} transition-all duration-200`}
-            >
-              <FaChartLine className="inline mr-1" /> Dashboard
-            </Link>
-          )}
-          <Link
-            to="/monitoramento-cidadao"
-            className={`${isActive(
-              "/monitoramento-cidadao"
-            )} transition-all duration-200`}
-          >
-            <FaSyncAlt className="inline mr-1" /> Monitoramento Cidadão
-          </Link>
         </nav>
       </header>
 
@@ -390,4 +393,4 @@ const MonitoramentoCidadao = () => {
   );
 };
 
-export default MonitoramentoCidadao;
+export default Relatos;

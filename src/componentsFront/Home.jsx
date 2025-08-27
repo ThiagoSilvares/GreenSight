@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Link as ScrollLink, animateScroll as scroll } from 'react-scroll';
-import { FaUser, FaChartLine, FaSyncAlt } from 'react-icons/fa';
+import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaChartBar } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 import Enchente from '../assets/enchente.png';
 
@@ -21,19 +21,22 @@ const Home = () => {
         </button>
 
         <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100">
+          {isUsuarioLogado && (
+            <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
+              <FaMapMarkedAlt className="inline mr-1" /> Mapa
+            </Link>
+          )}
+          <Link to="/relatos" className="hover:text-green-500 transition-all duration-200">
+            <FaRegCommentDots className="inline mr-1" /> Relatos
+          </Link>
+          <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
+            <FaChartBar className="inline mr-1" /> Gráficos
+          </Link>
           {!isUsuarioLogado && (
             <Link to="/login" className="hover:text-green-500 transition-all duration-200">
               <FaUser className="inline mr-1" /> Login
             </Link>
           )}
-          {isUsuarioLogado && (
-            <Link to="/dashboard" className="hover:text-green-500 transition-all duration-200">
-              <FaChartLine className="inline mr-1" /> Dashboard
-            </Link>
-          )}
-          <Link to="/monitoramento-cidadao" className="hover:text-green-500 transition-all duration-200">
-            <FaSyncAlt className="inline mr-1" /> Monitoramento Cidadão
-          </Link>
         </nav>
       </header>
 

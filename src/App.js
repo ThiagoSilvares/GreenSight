@@ -8,10 +8,11 @@ import {
 
 import Home from './componentsFront/Home';
 import Login from './componentsFront/Login';
-import Dashboard from './componentsFront/Dashboard';
+import Mapa from './componentsFront/Mapa';
 import CadastroBueiros from './componentsFront/CadastroBueiros';
 import AtualizarStatus from './componentsFront/AtualizarStatus';
-import MonitoramentoCidadao from './componentsFront/MonitoramentoCidadao';
+import Relatos from './componentsFront/Relatos';
+import Graficos from './componentsFront/Graficos'
 
 const PrivateRoute = ({ element }) => {
   const isUsuarioLogado = !!localStorage.getItem('usuarioLogado');
@@ -24,11 +25,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/monitoramento-cidadao" element={<MonitoramentoCidadao />} />
+        <Route path="/relatos" element={<Relatos />} />
+        <Route path="/graficos" element={<Graficos />} />
 
         <Route
-          path="/dashboard"
-          element={<PrivateRoute element={<Dashboard />} />}
+          path="/mapa"
+          element={<PrivateRoute element={<Mapa />} />}
         />
         <Route
           path="/cadastro-bueiros"

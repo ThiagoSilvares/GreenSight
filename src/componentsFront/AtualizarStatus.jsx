@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaChartLine,
-  FaSyncAlt,
+  FaMapMarkedAlt,
+  FaRegCommentDots,
   FaEdit,
   FaArrowLeft,
+  FaChartBar
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
@@ -57,18 +58,21 @@ const AtualizarStatus = () => {
           <img src={LogoEscrita} alt="Logo Green Sight" className="h-14 w-auto object-contain cursor-pointer" />
         </Link>
         <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100">
-          <Link to="/dashboard" className="hover:text-green-500 transition-all duration-200 font-bold">
-            <FaChartLine className="inline mr-1" /> Dashboard
+          <Link to="/mapa" className="hover:text-green-500 transition-all duration-200 font-bold">
+            <FaMapMarkedAlt className="inline mr-1" /> Mapa
           </Link>
-          <Link to="/monitoramento-cidadao" className="hover:text-green-500 transition-all duration-200">
-            <FaSyncAlt className="inline mr-1" /> Monitoramento Cidadão
+          <Link to="/relatos" className="hover:text-green-500 transition-all duration-200">
+            <FaRegCommentDots className="inline mr-1" /> Relatos
+          </Link>
+          <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
+            <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
         </nav>
       </header>
 
       <div className="pt-24 pl-16">
         <Link
-          to="/dashboard"
+          to="/mapa"
           className="absolute top-32 left-16 text-lg flex items-center border-b border-white hover:border-green-500 transition-all"
         >
           <FaArrowLeft className="text-white mr-2" />

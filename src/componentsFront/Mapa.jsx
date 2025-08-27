@@ -3,21 +3,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   FaBars,
   FaTimes,
-  FaChartLine,
-  FaSyncAlt,
+  FaMapMarkedAlt,
+  FaRegCommentDots,
   FaFileAlt,
   FaSignOutAlt,
-  FaBell,
+  // FaBell,
   FaPlus,
   FaEdit,
+  FaChartBar
 } from 'react-icons/fa';
-import { FiBell } from 'react-icons/fi';
+// import { FiBell } from 'react-icons/fi';
 import { IoChevronDown } from 'react-icons/io5';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 import MapComponent from './MapComponent';
 
-const Dashboard = () => {
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState(false);
+const Mapa = () => {
+  // const [notificacoesAtivas, setNotificacoesAtivas] = useState(false);
   const [papel, setPapel] = useState('');
   const [menuAberto, setMenuAberto] = useState(false);
   const [sidebarAberta, setSidebarAberta] = useState(false);
@@ -69,11 +70,14 @@ const Dashboard = () => {
         </Link>
 
         <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100">
-          <Link to="/dashboard" className="hover:text-green-500 transition-all duration-200 font-bold">
-            <FaChartLine className="inline mr-1" /> Dashboard
+          <Link to="/mapa" className="hover:text-green-500 transition-all duration-200 font-bold">
+            <FaMapMarkedAlt className="inline mr-1" /> Mapa
           </Link>
-          <Link to="/monitoramento-cidadao" className="hover:text-green-500 transition-all duration-200">
-            <FaSyncAlt className="inline mr-1" /> Monitoramento Cidadão
+          <Link to="/relatos" className="hover:text-green-500 transition-all duration-200">
+            <FaRegCommentDots className="inline mr-1" /> Relatos
+          </Link>
+          <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
+            <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
         </nav>
       </header>
@@ -101,9 +105,15 @@ const Dashboard = () => {
                   <FaEdit size={20} /> Atualizar Status
                 </li>
               )}
-              <li className="hover:text-green-400 cursor-pointer flex items-center gap-3">
-                <FaFileAlt size={20} /> Relatórios
-              </li>
+              {papel === 'Administrador' && (
+                <li
+                  onClick={() => navigate('/relatorios')}
+                  className="hover:text-green-400 cursor-pointer flex items-center gap-3"
+                >
+                  <FaFileAlt size={20} /> Relatórios
+                </li>
+              )}
+
               <li
                 onClick={() => setMostrarConfirmacaoLogout(true)}
                 className="hover:text-green-400 cursor-pointer flex items-center gap-3"
@@ -116,14 +126,14 @@ const Dashboard = () => {
 
         <main className="flex-1 p-10">
           <div className="flex justify-between items-center mb-12">
-            <h1 className="text-3xl md:text-5xl font-bold">Dashboard de Monitoramento</h1>
+            <h1 className="text-3xl md:text-5xl font-bold">Central de Monitoramento</h1>
             <div className="flex items-center space-x-4">
-              <button
+              {/* <button
                 className={`text-xl p-2 rounded hover:bg-zinc-800 transition ${notificacoesAtivas ? 'text-green-400' : ''}`}
                 onClick={() => setNotificacoesAtivas(!notificacoesAtivas)}
               >
                 {notificacoesAtivas ? <FaBell size={22} /> : <FiBell size={22} />}
-              </button>
+              </button> */}
 
               <div className="relative">
                 <button
@@ -248,4 +258,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Mapa;
