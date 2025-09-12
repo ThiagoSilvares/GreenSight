@@ -303,7 +303,7 @@ const Relatos = () => {
                   className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-[12px] text-zinc-600 mb-1">
                   Comentário
                 </label>
@@ -317,7 +317,7 @@ const Relatos = () => {
                 <div className="mt-1 text-right text-[11px] text-zinc-500">
                   {comment.length}/200
                 </div>
-              </div>
+              </div> */}
               <div>
                 <label className="block text-[12px] text-zinc-600 mb-1">
                   Imagem

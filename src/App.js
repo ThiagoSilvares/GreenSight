@@ -10,7 +10,6 @@ import Home from './componentsFront/Home';
 import Login from './componentsFront/Login';
 import Mapa from './componentsFront/Mapa';
 import CadastroBueiros from './componentsFront/CadastroBueiros';
-import AtualizarStatus from './componentsFront/AtualizarStatus';
 import Relatos from './componentsFront/Relatos';
 import Graficos from './componentsFront/Graficos'
 
@@ -35,10 +34,6 @@ function App() {
         <Route
           path="/cadastro-bueiros"
           element={<PrivateRoute element={<CadastroBueiros />} />}
-        />
-        <Route
-          path="/atualizar-status" 
-          element={<PrivateRoute element={<AtualizarStatus />} />}
         />
       </Routes>
     </Router>

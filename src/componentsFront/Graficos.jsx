@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid
+  ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  PieChart, Pie, Cell, Legend
 } from "recharts";
 import {
   FaMapMarkedAlt,
@@ -15,11 +16,19 @@ import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 const API = "http://localhost:3001/api";
 const CHART_HEIGHT = 340;
 
+// paleta fixa para zonas (evita variação entre renders)
+const ZONAS_COLORS = ["#22c55e", "#3b82f6", "#a855f7", "#f59e0b", "#ef4444", "#10b981", "#06b6d4", "#e11d48"];
+
 const Graficos = () => {
   const [resumo, setResumo] = useState(null);
-  const [bueiros, setBueiros] = useState([]);
+  const [bueiros, setBueiros] = useState([]);       // fallback p/ série diária
+  const [serieAPI, setSerieAPI] = useState(null);   // série diária da API (view)
+  const [zonasData, setZonasData] = useState(null); // dados por zona
+  const [zonasErr, setZonasErr] = useState(null);
+
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
 
+  // ---- RESUMO (view resumo_bueiros)
   useEffect(() => {
     fetch(`${API}/resumo`)
       .then((r) => r.json())
@@ -27,24 +36,38 @@ const Graficos = () => {
       .catch((e) => console.error("Erro /resumo:", e));
   }, []);
 
+  // ---- SÉRIE DIÁRIA (view bueiros_por_dia) c/ fallback em /bueiros
   useEffect(() => {
-    fetch(`${API}/bueiros`)
-      .then((r) => r.json())
-      .then(setBueiros)
-      .catch((e) => console.error("Erro /bueiros:", e));
+    fetch(`${API}/bueiros_por_dia`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error("endpoint /bueiros_por_dia indisponível");
+        const data = await r.json();
+        setSerieAPI(Array.isArray(data) ? data : null);
+      })
+      .catch(() => {
+        fetch(`${API}/bueiros`)
+          .then((r) => r.json())
+          .then(setBueiros)
+          .catch((e) => console.error("Erro fallback /bueiros:", e));
+      });
   }, []);
 
-  const limpos = Number(resumo?.bueiros_limpos ?? 0);
-  const obstruidos = Number(resumo?.bueiros_obstruidos ?? 0);
-  const naoAnalisados = Number(resumo?.bueiros_nao_analisados ?? 0);
-  const totalMapeadosStatus = limpos + obstruidos + naoAnalisados;
+  // ---- ZONAS (usa sua rota do backend)
+  useEffect(() => {
+    fetch(`${API}/bueiros/por-zona`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error("endpoint /bueiros/por-zona indisponível");
+        const data = await r.json();
+        setZonasData(Array.isArray(data) ? data : []);
+      })
+      .catch((e) => {
+        console.error("Erro /bueiros/por-zona:", e);
+        setZonasErr("Endpoint /bueiros/por-zona indisponível");
+        setZonasData(null);
+      });
+  }, []);
 
-  const donutData = [
-    { name: "Limpos", value: limpos, color: "#22c55e" },
-    { name: "Não analisados", value: naoAnalisados, color: "#3b82f6" },
-    { name: "Obstruídos", value: obstruidos, color: "#ef4444" },
-  ];
-
+  // ---------- HELPERS ----------
   function onlyDate(iso) {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return null;
@@ -54,7 +77,15 @@ const Graficos = () => {
     return `${yyyy}-${mm}-${dd}`;
   }
 
+  // Série final dos últimos 30 dias (usa série da API; senão computa via /bueiros)
   const mapeadosSerie = useMemo(() => {
+    if (Array.isArray(serieAPI) && serieAPI.length) {
+      return serieAPI.map((p) => {
+        const d = (p.dia || p.DIA || p.date || "").toString().slice(0, 10);
+        const [yyyy, mm, dd] = d.split("-");
+        return { dia: `${dd}/${mm}`, mapeados: Number(p.total_no_dia ?? p.total ?? p.count ?? 0) };
+      });
+    }
     const today = new Date();
     const dias = [];
     for (let i = 29; i >= 0; i--) {
@@ -62,13 +93,12 @@ const Graficos = () => {
       d.setDate(today.getDate() - i);
       dias.push(onlyDate(d.toISOString()));
     }
-
     const base = Object.fromEntries(dias.map((d) => [d, 0]));
     for (const b of bueiros || []) {
       const quando =
+        b.data_monitoramento ||
         b.data_mapeamento ||
         b.data_cadastro ||
-        b.data_monitoramento ||      
         b.created_at ||
         b.createdAt ||
         b.updated_at ||
@@ -76,16 +106,27 @@ const Graficos = () => {
       const dia = onlyDate(quando);
       if (dia && base[dia] !== undefined) base[dia] += 1;
     }
-
     return dias.map((d) => {
       const [yyyy, mm, dd] = d.split("-");
       return { dia: `${dd}/${mm}`, mapeados: base[d] };
     });
-  }, [bueiros]);
+  }, [serieAPI, bueiros]);
 
-  const totalMapeadosLista =
-    bueiros?.length ?? Number(resumo?.total_monitorados ?? 0);
+  const totalAcumulado = Number(
+    resumo?.total_mapeados ?? resumo?.total_monitorados ?? (bueiros?.length ?? 0)
+  );
   const hasMapeados = mapeadosSerie.some((p) => p.mapeados > 0);
+
+  // Normaliza dados por zona para Pizza
+  const zonasPieData = useMemo(() => {
+    if (!Array.isArray(zonasData)) return [];
+    return zonasData.map((z) => ({
+      name: z.zona ?? z.nome ?? "—",
+      value: Number(z.total_bueiros ?? z.total ?? 0),
+    }));
+  }, [zonasData]);
+
+  const totalZonas = zonasPieData.reduce((acc, z) => acc + (Number.isFinite(z.value) ? z.value : 0), 0);
 
   return (
     <div className="bg-black min-h-screen text-white font-sans">
@@ -123,6 +164,7 @@ const Graficos = () => {
           Indicadores do Mapeamento de Bueiros
         </h1>
 
+        {/* Série temporal */}
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">
@@ -130,7 +172,7 @@ const Graficos = () => {
             </h2>
             <span className="text-sm text-zinc-300">
               Total mapeados:{" "}
-              <span className="font-bold text-white">{totalMapeadosLista}</span>
+              <span className="font-bold text-white">{totalAcumulado}</span>
             </span>
           </div>
 
@@ -164,57 +206,48 @@ const Graficos = () => {
           </div>
         </div>
 
+        {/* Pizza por Zonas */}
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Distribuição por status</h2>
+            <h2 className="text-2xl font-semibold">Bueiros por zona</h2>
             <span className="text-sm text-zinc-300">
-              Total mapeados:{" "}
-              <span className="font-bold text-white">{totalMapeadosStatus}</span>
+              Total somado:{" "}
+              <span className="font-bold text-white">{totalZonas}</span>
             </span>
           </div>
 
-          {totalMapeadosStatus > 0 ? (
-            <div className="w-full" style={{ height: CHART_HEIGHT }}>
+          <div className="w-full" style={{ height: CHART_HEIGHT }}>
+            {zonasErr ? (
+              <div className="h-full flex items-center justify-center text-zinc-300">
+                {zonasErr}. Certifique-se de expor <code>/bueiros/por-zona</code> no backend.
+              </div>
+            ) : Array.isArray(zonasPieData) && zonasPieData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={donutData}
+                    data={zonasPieData}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
                     outerRadius={120}
-                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
                   >
-                    {donutData.map((d, i) => (
-                      <Cell key={i} fill={d.color} />
+                    {zonasPieData.map((_, i) => (
+                      <Cell key={i} fill={ZONAS_COLORS[i % ZONAS_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(v) => `${v} bueiro(s)`} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-zinc-300">
-              Sem dados para exibir.
-            </div>
-          )}
-
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="bg-zinc-900 rounded-md py-3">
-              <p className="text-zinc-400 text-xs uppercase tracking-wide">Limpos</p>
-              <p className="text-2xl font-bold text-green-400">{limpos}</p>
-            </div>
-            <div className="bg-zinc-900 rounded-md py-3">
-              <p className="text-zinc-400 text-xs uppercase tracking-wide">Não analisados</p>
-              <p className="text-2xl font-bold text-blue-400">{naoAnalisados}</p>
-            </div>
-            <div className="bg-zinc-900 rounded-md py-3">
-              <p className="text-zinc-400 text-xs uppercase tracking-wide">Obstruídos</p>
-              <p className="text-2xl font-bold text-red-400">{obstruidos}</p>
-            </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-zinc-300">
+                Sem dados por zona para exibir.
+              </div>
+            )}
           </div>
         </div>
       </main>

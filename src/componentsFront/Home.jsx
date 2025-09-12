@@ -46,7 +46,7 @@ const Home = () => {
         </h2>
         <p className="text-gray-300 max-w-3xl mx-auto mb-8 text-sm md:text-base">
           O Green Sight utiliza tecnologia de câmeras e análise de dados para o mapeamento de bueiros em tempo real, 
-          possibilitando a atualização manual do estado de cada uma das unidades monitoradas. A partir disso, constrói-se uma base geoespacial confiável, 
+          possibilitando também o cadastro manual de cada uma das unidades monitoradas. A partir disso, constrói-se uma base geoespacial confiável, 
           que apoia a prevenção de enchentes, o planejamento urbano e a gestão sustentável das cidades.
         </p>
         <div className="my-8">
@@ -78,7 +78,7 @@ const Home = () => {
         <div className="bg-white rounded-md shadow-md p-6 text-center">
           <h3 className="text-lg font-bold mb-2">Gestão Estratégica</h3>
           <p className="text-sm">
-            Disponibilização da localização e do estado atualizado dos bueiros, promovendo engajamento social e fortalecimento da consciência ambiental coletiva.
+            Disponibilização da localização dos bueiros, promovendo engajamento social e fortalecimento da consciência ambiental coletiva.
           </p>
         </div>
       </section>
@@ -128,7 +128,7 @@ const Home = () => {
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
             <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Mapa</div>
             <h3 className="text-base font-semibold mb-2">Mapa Interativo</h3>
-            <p className="text-sm">Os dados processados são exibidos em mapas que permitem a visualização da distribuição dos bueiros na cidade, servindo como base para atualizações manuais de estado.</p>
+            <p className="text-sm">Os dados processados são exibidos em mapas que permitem a visualização da distribuição dos bueiros na cidade, servindo como base para planejamento e ações de manutenção.</p>
           </div>
         </div>
       </section>

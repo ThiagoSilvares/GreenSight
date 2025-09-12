@@ -15,7 +15,6 @@ const CadastroBueiros = () => {
   const [formData, setFormData] = useState({
     latitude: '',
     longitude: '',
-    status: '',
   });
 
   const [imagem, setImagem] = useState(null);
@@ -35,27 +34,39 @@ const CadastroBueiros = () => {
   };
 
   const handleImagemChange = (e) => {
-    setImagem(e.target.files[0]);
+    setImagem(e.target.files[0] || null);
+  };
+
+  const toNum = (v) => {
+    if (typeof v !== 'string') return parseFloat(v);
+    // aceita vírgula decimal
+    return parseFloat(v.replace(',', '.'));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const bueiroDuplicado = bueirosExistentes.some(b =>
-      Number(b.latitude) === Number(formData.latitude) &&
-      Number(b.longitude) === Number(formData.longitude)
-    );
+    const lat = toNum(formData.latitude);
+    const lon = toNum(formData.longitude);
 
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      setMensagem('Latitude e longitude devem ser números válidos.');
+      return;
+    }
+
+    // checagem simples de duplicidade (mesmas coords)
+    const bueiroDuplicado = bueirosExistentes.some(b =>
+      Number(b.latitude) === lat && Number(b.longitude) === lon
+    );
     if (bueiroDuplicado) {
       setMensagem('Este bueiro já está cadastrado.');
       return;
     }
 
     const data = new FormData();
-    data.append('latitude', formData.latitude);
-    data.append('longitude', formData.longitude);
-    data.append('status', formData.status);
-    data.append('imagem', imagem);
+    data.append('latitude', String(lat));
+    data.append('longitude', String(lon));
+    if (imagem) data.append('imagem', imagem); // opcional
 
     try {
       const resposta = await fetch('http://localhost:3001/api/bueiros', {
@@ -65,17 +76,15 @@ const CadastroBueiros = () => {
 
       if (resposta.ok) {
         setMensagem('Bueiro cadastrado com sucesso!');
-        setFormData({
-          latitude: '',
-          longitude: '',
-          status: 'nao_analisado',
-        });
+        setFormData({ latitude: '', longitude: '' });
         setImagem(null);
+
         const atualizados = await fetch('http://localhost:3001/api/bueiros');
         const dadosAtualizados = await atualizados.json();
         setBueirosExistentes(dadosAtualizados);
       } else {
-        setMensagem('Erro ao cadastrar bueiro.');
+        const errText = await resposta.text();
+        setMensagem(`Erro ao cadastrar bueiro. ${errText || ''}`);
       }
     } catch (err) {
       console.error(err);
@@ -133,6 +142,7 @@ const CadastroBueiros = () => {
               name="latitude"
               value={formData.latitude}
               onChange={handleChange}
+              placeholder="-23.55"
               className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
@@ -145,35 +155,21 @@ const CadastroBueiros = () => {
               name="longitude"
               value={formData.longitude}
               onChange={handleChange}
+              placeholder="-46.63"
               className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
           </div>
 
-          <div>
-            <label className="block mb-1 text-zinc-300">Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            >
-              <option value="">Selecione um status</option>
-              <option value="limpo">Limpo</option>
-              <option value="obstruido">Obstruído</option>
-              <option value="nao_analisado">Não Analisado</option>
-            </select>
-          </div>
+          {/* REMOVIDO: campo de Status (não usamos mais) */}
 
           <div>
-            <label className="block mb-1 text-zinc-300">Imagem do bueiro (arquivo)</label>
+            <label className="block mb-1 text-zinc-300">Imagem do bueiro (opcional)</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImagemChange}
               className="w-full px-4 py-2 rounded bg-zinc-900 border border-zinc-700"
-              required
             />
           </div>
 

@@ -1,0 +1,195 @@
+Banco NOVO TCC:
+
+-- CREATE EXTENSION IF NOT EXISTS postgis;
+-- CREATE EXTENSION IF NOT EXISTS pgcrypto;  -- para UUID em relatos
+
+
+-----------------------------------------------------------
+-- #TABELA BUEIROS
+
+-- CREATE TABLE IF NOT EXISTS public.bueiros (
+--   id SERIAL PRIMARY KEY,
+--   imagem BYTEA,
+--   data_monitoramento TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--   localizacao geometry(Point, 4326) NOT NULL  -- usa PostGIS
+-- );
+
+-- #ÍNDICE ESPACIAL#
+-- CREATE INDEX IF NOT EXISTS bueiros_localizacao_gix
+--   ON public.bueiros USING GIST (localizacao);
+
+-- #DEDUPLICAÇÃO (~11m)#
+-- CREATE UNIQUE INDEX IF NOT EXISTS bueiros_uq_snap
+--   ON public.bueiros (ST_SnapToGrid(localizacao, 0.0001));
+
+-- #VER BUEIROS CADASTRADOS#
+-- SELECT id, data_monitoramento, ST_AsText(localizacao)
+-- FROM bueiros
+-- ORDER BY id DESC;
+
+-- #DELETAR BUEIROS#
+-- DELETE FROM bueiros;
+
+
+-----------------------------------------------------------
+-- #LOGIN USUÁRIOS#
+
+-- CREATE TABLE IF NOT EXISTS public.usuarios (
+--   id SERIAL PRIMARY KEY,
+--   email VARCHAR(100) UNIQUE NOT NULL,
+--   senha VARCHAR(100) NOT NULL,
+--   nome VARCHAR(100),
+--   is_admin BOOLEAN NOT NULL DEFAULT true
+-- );
+
+-- #CRIAR USUÁRIO#
+-- INSERT INTO usuarios (email, senha, nome, is_admin)
+-- VALUES ('admin@greensight.com', '#1234s', 'Administrador', true);
+
+-- #APAGAR USUÁRIO#
+-- DELETE FROM usuarios WHERE email = 'admin@greensight.com';
+
+
+-----------------------------------------------------------
+-- #TABELA RELATOS#
+
+-- CREATE TABLE IF NOT EXISTS public.relatos (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   author     TEXT        NOT NULL,
+--   address    TEXT        NOT NULL,
+--   image_path TEXT        NOT NULL,
+--   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
+
+-- CREATE INDEX IF NOT EXISTS relatos_created_at_idx
+--   ON public.relatos (created_at DESC);
+
+-- #INSERIR RELATO#
+-- INSERT INTO relatos (author, address, image_path)
+-- VALUES ('Maria', 'Rua X, 123', '/uploads/img01.jpg');
+
+-- #CONSULTAR RELATOS#
+-- SELECT * FROM relatos ORDER BY created_at DESC;
+
+
+-----------------------------------------------------------
+-- #VIEW RESUMO BUEIROS#
+
+-- CREATE OR REPLACE VIEW public.resumo_bueiros AS
+-- SELECT
+--   COUNT(*) AS total_mapeados,
+--   COUNT(*) FILTER (WHERE data_monitoramento::date = CURRENT_DATE)          AS novos_hoje,
+--   COUNT(*) FILTER (WHERE data_monitoramento >= NOW() - INTERVAL '7 days')  AS novos_7d,
+--   COUNT(*) FILTER (WHERE data_monitoramento >= NOW() - INTERVAL '30 days') AS novos_30d
+-- FROM public.bueiros;
+
+-- #VER RESUMO#
+-- SELECT * FROM resumo_bueiros;
+
+
+-----------------------------------------------------------
+-- #VIEW BUEIROS POR DIA#
+
+-- CREATE OR REPLACE VIEW public.bueiros_por_dia AS
+-- SELECT
+--   date_trunc('day', data_monitoramento)::date AS dia,
+--   COUNT(*) AS total_no_dia
+-- FROM public.bueiros
+-- GROUP BY 1
+-- ORDER BY 1 DESC;
+
+-- #CONSULTAR#
+-- SELECT * FROM bueiros_por_dia LIMIT 30;
+
+
+-----------------------------------------------------------
+-- #ZONAS#
+
+-- CREATE TABLE IF NOT EXISTS public.zonas (
+--   id   SERIAL PRIMARY KEY,
+--   nome TEXT NOT NULL UNIQUE,
+--   geom geometry(MultiPolygon, 4326) NOT NULL
+-- );
+
+-- CREATE INDEX IF NOT EXISTS zonas_geom_gix
+--   ON public.zonas USING GIST (geom);
+
+-- #BUEIROS POR ZONA#
+-- SELECT z.nome, COUNT(b.id)
+-- FROM zonas z
+-- LEFT JOIN bueiros b ON ST_Within(b.localizacao, z.geom)
+-- GROUP BY z.nome;
+
+-----------------------------------------------------------
+-- #MUNICÍPIOS#
+
+-- CREATE TABLE IF NOT EXISTS public.municipios (
+--   id   SERIAL PRIMARY KEY,
+--   nome TEXT NOT NULL UNIQUE,
+--   geom geometry(MultiPolygon, 4326) NOT NULL
+-- );
+
+-- CREATE INDEX IF NOT EXISTS municipios_geom_gix
+--   ON public.municipios USING GIST (geom);
+
+-- #INSERIR MUNICÍPIO#
+-- INSERT INTO municipios (nome, geom)
+-- VALUES ('São Caetano do Sul', ST_GeomFromText('MULTIPOLYGON(((...)))', 4326));
+
+-- #VALIDAR MUNICÍPIOS#
+-- SELECT id, nome, ST_IsValid(geom) AS valido
+-- FROM municipios;
+
+-- #CORRIGIR GEOMETRIA INVÁLIDA#
+-- UPDATE municipios SET geom = ST_MakeValid(geom)
+-- WHERE NOT ST_IsValid(geom);
+
+-- #BUEIROS POR MUNICÍPIO#
+-- SELECT m.nome, COUNT(b.id) AS total_bueiros
+-- FROM municipios m
+-- LEFT JOIN bueiros b ON ST_Within(b.localizacao, m.geom)
+-- GROUP BY m.nome
+-- ORDER BY total_bueiros DESC;
+
+-- #EXPORTAR MUNICÍPIOS EM GEOJSON#
+-- SELECT m.nome,
+--        ST_AsGeoJSON(ST_Simplify(m.geom, 0.0001)) AS geojson,
+--        COUNT(b.id) AS total_bueiros
+-- FROM municipios m
+-- LEFT JOIN bueiros b ON ST_Within(b.localizacao, m.geom)
+-- GROUP BY m.nome, m.geom;
+
+-----------------------------------------------------------
+-- #ÁREA DA CIDADE#
+
+-- CREATE TABLE IF NOT EXISTS public.cidade_area (
+--   id   SERIAL PRIMARY KEY,
+--   nome TEXT NOT NULL UNIQUE,
+--   geom geometry(MultiPolygon, 4326) NOT NULL
+-- );
+
+-- CREATE INDEX IF NOT EXISTS cidade_area_geom_gix
+--   ON public.cidade_area USING GIST (geom);
+
+-- #INSERIR ÁREA DA CIDADE#
+-- INSERT INTO cidade_area (nome, geom)
+-- VALUES ('São Caetano do Sul - Área Urbana', ST_GeomFromText('MULTIPOLYGON(((...)))', 4326));
+
+-- #BUEIROS DENTRO DA ÁREA#
+-- SELECT c.nome, COUNT(b.id) AS total_na_area
+-- FROM cidade_area c
+-- LEFT JOIN bueiros b ON ST_Within(b.localizacao, c.geom)
+-- GROUP BY c.nome;
+
+-- #BUEIROS NA ÁREA POR DIA#
+-- SELECT date_trunc('day', b.data_monitoramento)::date AS dia,
+--        COUNT(*) AS total_no_dia
+-- FROM cidade_area c
+-- JOIN bueiros b ON ST_Within(b.localizacao, c.geom)
+-- WHERE c.nome = 'São Caetano do Sul - Área Urbana'
+-- GROUP BY 1
+-- ORDER BY 1 DESC;
+
+-- #EXPORTAR ÁREA EM GEOJSON#
+-- SELECT c.nome, ST_AsGeoJSON(ST_Simplify(c.geom, 0.0001)) AS geojson
+-- FROM cidade_area c;
