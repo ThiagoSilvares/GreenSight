@@ -9,12 +9,13 @@ import {
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
-// 🔹 Base da API via env (Vercel: REACT_APP_API_BASE_URL | Vite: VITE_API_BASE_URL)
-const API = (
-  import.meta?.env?.VITE_API_BASE_URL ||
+const API_BASE =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
   process.env.REACT_APP_API_BASE_URL ||
-  ''
-).replace(/\/$/, '');
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  'http://localhost:3001';
+
+const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
 
 const CadastroBueiros = () => {
   const navigate = useNavigate();
@@ -46,7 +47,6 @@ const CadastroBueiros = () => {
 
   const toNum = (v) => {
     if (typeof v !== 'string') return parseFloat(v);
-    // aceita vírgula decimal
     return parseFloat(v.replace(',', '.'));
   };
 
@@ -61,7 +61,6 @@ const CadastroBueiros = () => {
       return;
     }
 
-    // checagem simples de duplicidade (mesmas coords)
     const bueiroDuplicado = bueirosExistentes.some(b =>
       Number(b.latitude) === lat && Number(b.longitude) === lon
     );
@@ -73,7 +72,7 @@ const CadastroBueiros = () => {
     const data = new FormData();
     data.append('latitude', String(lat));
     data.append('longitude', String(lon));
-    if (imagem) data.append('imagem', imagem); // opcional
+    if (imagem) data.append('imagem', imagem);
 
     try {
       const resposta = await fetch(`${API}/bueiros`, {
@@ -167,8 +166,6 @@ const CadastroBueiros = () => {
               required
             />
           </div>
-
-          {/* REMOVIDO: campo de Status (não usamos mais) */}
 
           <div>
             <label className="block mb-1 text-zinc-300">Imagem do bueiro (opcional)</label>

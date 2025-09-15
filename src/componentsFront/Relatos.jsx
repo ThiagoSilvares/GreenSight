@@ -3,21 +3,27 @@ import { Link, useLocation } from "react-router-dom";
 import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaTrash, FaChartBar } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
-// ===== Base de API via variável de ambiente (Vite ou CRA) com fallback =====
-const API_BASE =
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-  (typeof process !== "undefined" && process.env && process.env.REACT_APP_API_BASE_URL) ||
+const API_BASE_RAW =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
+  (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE_URL) ||
   (typeof window !== "undefined" && window.__API_BASE__) ||
   "http://localhost:3001";
 
+const API_BASE = String(API_BASE_RAW).replace(/\/$/, "");
 const API = `${API_BASE}/api`;
 
-// Converte caminhos relativos (ex.: "/uploads/xyz.jpg") em URL absoluta
 const toAbsoluteUrl = (url) => {
   if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url; // já é absoluta
+  if (/^https?:\/\//i.test(url)) return url;
   return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
 };
+
+const normalizeNumber = (v) => {
+  if (v == null) return NaN;
+  return parseFloat(String(v).replace(",", "."));
+};
+const isValidLat = (v) => Number.isFinite(v) && v >= -90 && v <= 90;
+const isValidLon = (v) => Number.isFinite(v) && v >= -180 && v <= 180;
 
 const Relatos = () => {
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
@@ -38,35 +44,55 @@ const Relatos = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [author, setAuthor] = useState("");
-  const [comment, setComment] = useState("");
-  const [address, setAddress] = useState("");
+  const [latText, setLatText] = useState("");
+  const [lonText, setLonText] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null); 
+
+  const fetchRelatos = async () => {
+    try {
+      setLoading(true);
+      const r = await fetch(`${API}/relatos`);
+
+      if (!r.ok) {
+        if (posts.length > 0) setError(`Falha ao carregar (${r.status}).`);
+        setPosts([]);
+        return;
+      }
+
+      const data = await r.json().catch(() => null);
+      if (!Array.isArray(data)) {
+        if (posts.length > 0) setError("Resposta inesperada do servidor.");
+        setPosts([]);
+        return;
+      }
+
+      const mapped = data.map((it) => ({
+        id: it.id,
+        author: it.author,
+        address: it.address ?? null,
+        latitude: it.latitude != null ? Number(it.latitude) : null,
+        longitude: it.longitude != null ? Number(it.longitude) : null,
+        imageUrl: it.image_path,
+        createdAt: it.created_at,
+      }));
+
+      setError(null);       
+      setPosts(mapped);    
+    } catch (e) {
+      console.error(e);
+      if (posts.length > 0) setError("Não foi possível carregar os relatos.");
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const r = await fetch(`${API}/relatos`);
-        const data = await r.json();
-        const mapped = data.map((it) => ({
-          id: it.id,
-          author: it.author,
-          comment: it.comment,
-          address: it.address,
-          imageUrl: it.image_path,
-          createdAt: it.created_at,
-        }));
-        setPosts(mapped);
-      } catch (e) {
-        console.error(e);
-        alert("Não foi possível carregar os relatos.");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchRelatos();
   }, []);
 
   function handleFileSelect(file) {
@@ -94,8 +120,8 @@ const Relatos = () => {
 
   function clearForm() {
     setAuthor("");
-    setComment("");
-    setAddress("");
+    setLatText("");
+    setLonText("");
     setImageFile(null);
     setImagePreview(null);
   }
@@ -103,17 +129,18 @@ const Relatos = () => {
   async function handlePublish(e) {
     e.preventDefault();
     if (!author.trim()) return alert("Informe seu nome.");
-    if (!comment.trim() || comment.trim().length < 4)
-      return alert("Descreva o que encontrou (mín. 4 caracteres).");
-    if (!imageFile) return alert("Anexe uma imagem.");
-    if (!address.trim()) return alert("Informe o endereço do local.");
+
+    const lat = normalizeNumber(latText);
+    const lon = normalizeNumber(lonText);
+    if (!isValidLat(lat)) return alert("Latitude inválida.");
+    if (!isValidLon(lon)) return alert("Longitude inválida.");
 
     try {
       const form = new FormData();
       form.append("author", author.trim());
-      form.append("comment", comment.trim());
-      form.append("address", address.trim());
-      form.append("image", imageFile);
+      form.append("latitude", String(lat));
+      form.append("longitude", String(lon));
+      if (imageFile) form.append("image", imageFile);
 
       const resp = await fetch(`${API}/relatos`, {
         method: "POST",
@@ -129,8 +156,9 @@ const Relatos = () => {
       const newPost = {
         id: saved.id,
         author: saved.author,
-        comment: saved.comment,
-        address: saved.address,
+        address: saved.address ?? null,
+        latitude: saved.latitude != null ? Number(saved.latitude) : lat,
+        longitude: saved.longitude != null ? Number(saved.longitude) : lon,
         imageUrl: saved.image_path,
         createdAt: saved.created_at,
       };
@@ -138,6 +166,7 @@ const Relatos = () => {
       setPosts((prev) => [newPost, ...prev]);
       setShowForm(false);
       clearForm();
+      setError(null);
     } catch (err) {
       console.error(err);
       alert(err.message || "Falha ao publicar. Tente novamente.");
@@ -146,15 +175,13 @@ const Relatos = () => {
 
   async function handleDelete(relatoId) {
     if (!isAdmin) return;
-    const ok = window.confirm("Confirma excluir este relato?");
+    const ok = window.confirm("Certeza que deseja excluir este relato?");
     if (!ok) return;
 
     try {
       const resp = await fetch(`${API}/relatos/${relatoId}`, {
         method: "DELETE",
-        headers: {
-          "X-User-Email": email || "",
-        },
+        headers: { "X-User-Email": email || "" },
       });
 
       if (resp.status === 204) {
@@ -170,41 +197,50 @@ const Relatos = () => {
     }
   }
 
+  const renderLocalInfo = (p) => {
+    if (Number.isFinite(p?.latitude) && Number.isFinite(p?.longitude)) {
+      const latStr = p.latitude.toFixed(6);
+      const lonStr = p.longitude.toFixed(6);
+      const gmaps = `https://www.google.com/maps?q=${latStr},${lonStr}`;
+      return (
+        <p>
+          <span className="font-semibold">Local:</span>{" "}
+          <a href={gmaps} target="_blank" rel="noreferrer" className="underline text-blue-700">
+            {latStr}, {lonStr}
+          </a>
+        </p>
+      );
+    }
+    if (p?.address) {
+      return (
+        <p>
+          <span className="font-semibold">Endereço:</span> {p.address}
+        </p>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="bg-black text-white min-h-screen font-sans flex flex-col">
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
         <Link to="/" className="focus:outline-none">
-          <img
-            src={LogoEscrita}
-            alt="Logo Escrita Green Sight"
-            className="h-14 w-auto object-contain cursor-pointer"
-          />
+          <img src={LogoEscrita} alt="Logo Escrita Green Sight" className="h-14 w-auto object-contain cursor-pointer" />
         </Link>
         <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100 flex items-center">
           {isUsuarioLogado && (
-            <Link
-              to="/mapa"
-              className={`${isActive("/mapa")} transition-all duration-200`}
-            >
+            <Link to="/mapa" className={`${isActive("/mapa")} transition-all duration-200`}>
               <FaMapMarkedAlt className="inline mr-1" /> Mapa
             </Link>
           )}
-          <Link
-            to="/relatos"
-            className={`${isActive(
-              "/relatos"
-            )} transition-all duration-200`}
-          >
+          <Link to="/relatos" className={`${isActive("/relatos")} transition-all duration-200`}>
             <FaRegCommentDots className="inline mr-1" /> Relatos
           </Link>
           <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
             <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
           {!isUsuarioLogado && (
-            <Link
-              to="/login"
-              className={`${isActive("/login")} transition-all duration-200`}
-            >
+            <Link to="/login" className={`${isActive("/login")} transition-all duration-200`}>
               <FaUser className="inline mr-1" /> Login
             </Link>
           )}
@@ -213,10 +249,7 @@ const Relatos = () => {
 
       <main className="pt-28 pb-12 px-6 max-w-5xl mx-auto w-full flex-1">
         <div className="mb-5">
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition duration-200 text-sm"
-          >
+          <button onClick={() => setShowForm(true)} className="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition duration-200 text-sm">
             + Nova publicação
           </button>
         </div>
@@ -226,7 +259,14 @@ const Relatos = () => {
             <div className="px-5 py-3 text-base text-zinc-700">Carregando...</div>
           ) : posts.length === 0 ? (
             <div className="px-5 py-3 text-base text-zinc-700">
-              Ainda não há relatos.
+              Ainda não há relatos publicados.
+            </div>
+          ) : error ? ( 
+            <div className="px-5 py-3 text-base text-red-700 bg-red-50 border-t border-red-200">
+              {error}{" "}
+              <button onClick={fetchRelatos} className="ml-2 underline text-red-800 hover:text-red-900">
+                Tentar novamente
+              </button>
             </div>
           ) : (
             <ul>
@@ -235,39 +275,20 @@ const Relatos = () => {
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-lg font-semibold">{p.author}</p>
                     <div className="flex items-center gap-3">
-                      <time className="text-sm text-zinc-600">
-                        {getNiceDate(p.createdAt)}
-                      </time>
+                      <time className="text-sm text-zinc-600">{getNiceDate(p.createdAt)}</time>
                       {isAdmin && (
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          className="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1"
-                          title="Excluir relato"
-                        >
-                          <FaTrash className="inline" />
-                          Excluir
+                        <button onClick={() => handleDelete(p.id)} className="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1" title="Excluir relato">
+                          <FaTrash className="inline" /> Excluir
                         </button>
                       )}
                     </div>
                   </div>
-                  <p className="mt-3 text-base text-zinc-800 whitespace-pre-line">
-                    {p.comment}
-                  </p>
+
                   {p.imageUrl && (
-                    <img
-                      src={toAbsoluteUrl(p.imageUrl)}
-                      alt="Imagem do relato"
-                      className="mt-4 w-full max-h-[300px] object-contain rounded bg-black"
-                    />
+                    <img src={toAbsoluteUrl(p.imageUrl)} alt="Imagem do relato" className="mt-4 w-full max-h-[300px] object-contain rounded bg-black" />
                   )}
-                  <div className="mt-3 text-sm text-zinc-700">
-                    <p>
-                      <span className="font-semibold">Endereço:</span> {p.address}
-                    </p>
-                  </div>
-                  {i !== posts.length - 1 && (
-                    <hr className="mt-5 border-zinc-300" />
-                  )}
+                  <div className="mt-3 text-sm text-zinc-700">{renderLocalInfo(p)}</div>
+                  {i !== posts.length - 1 && <hr className="mt-5 border-zinc-300" />}
                 </li>
               ))}
             </ul>
@@ -282,17 +303,11 @@ const Relatos = () => {
             <p>Todos os direitos reservados.</p>
           </div>
           <div className="text-center">
-            <p className="italic">
-              Um projeto de TCC para um futuro mais sustentável.
-            </p>
+            <p className="italic">Um projeto de TCC para um futuro mais sustentável.</p>
           </div>
           <div className="flex justify-center md:justify-end space-x-6">
-            <a href="#" className="hover:text-white">
-              Privacidade
-            </a>
-            <a href="#" className="hover:text-white">
-              Termos de Uso
-            </a>
+            <a href="#" className="hover:text-white">Privacidade</a>
+            <a href="#" className="hover:text-white">Termos de Uso</a>
           </div>
         </div>
       </footer>
@@ -306,9 +321,7 @@ const Relatos = () => {
 
             <form onSubmit={handlePublish} className="p-4 grid gap-4">
               <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">
-                  Seu nome
-                </label>
+                <label className="block text-[12px] text-zinc-600 mb-1">Seu nome</label>
                 <input
                   type="text"
                   value={author}
@@ -317,25 +330,9 @@ const Relatos = () => {
                   className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
                 />
               </div>
-              {/* <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">
-                  Comentário
-                </label>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Ex.: Bueiro com lixo acumulado e água parada."
-                  className="w-full min-h-[96px] rounded border border-zinc-300 p-2.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
-                  maxLength={200}
-                />
-                <div className="mt-1 text-right text-[11px] text-zinc-500">
-                  {comment.length}/200
-                </div>
-              </div> */}
+
               <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">
-                  Imagem
-                </label>
+                <label className="block text-[12px] text-zinc-600 mb-1">Imagem (opcional)</label>
                 <div
                   onDrop={onDrop}
                   onDragOver={(e) => e.preventDefault()}
@@ -349,53 +346,51 @@ const Relatos = () => {
                     onChange={(e) => handleFileSelect(e.target.files?.[0])}
                   />
                   {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Pré-visualização"
-                      className="max-h-52 rounded"
-                    />
+                    <img src={imagePreview} alt="Pré-visualização" className="max-h-52 rounded" />
                   ) : (
                     <>
                       <p className="text-[13px] text-zinc-800">
                         Arraste a imagem aqui ou{" "}
-                        <label
-                          htmlFor="up-img"
-                          className="text-green-700 underline cursor-pointer"
-                        >
+                        <label htmlFor="up-img" className="text-green-700 underline cursor-pointer">
                           clique para selecionar
                         </label>
                       </p>
-                      <p className="text-[11px] text-zinc-500">
-                        JPG, PNG, HEIC…
-                      </p>
+                      <p className="text-[11px] text-zinc-500">JPG, PNG, HEIC… (opcional)</p>
                     </>
                   )}
                 </div>
               </div>
-              <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">
-                  Endereço
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Rua Exemplo, 123 — Bairro, Cidade/UF"
-                  className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
-                />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] text-zinc-600 mb-1">Latitude</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={latText}
+                    onChange={(e) => setLatText(e.target.value)}
+                    placeholder="-23.64601"
+                    className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] text-zinc-600 mb-1">Longitude</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={lonText}
+                    onChange={(e) => setLonText(e.target.value)}
+                    placeholder="-46.57590"
+                    className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
               </div>
+
               <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-3 py-1.5 text-[13px] rounded-full border hover:bg-zinc-50"
-                >
+                <button type="button" onClick={() => setShowForm(false)} className="px-3 py-1.5 text-[13px] rounded-full border hover:bg-zinc-50">
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 text-[13px] rounded-full bg-green-700 hover:bg-green-600 text-white font-semibold"
-                >
+                <button type="submit" className="px-3 py-1.5 text-[13px] rounded-full bg-green-700 hover:bg-green-600 text-white font-semibold">
                   Publicar
                 </button>
               </div>

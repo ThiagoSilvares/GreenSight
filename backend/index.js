@@ -1,34 +1,28 @@
-// index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();          // carrega .env
-const pool = require('./db');        // usa o pool do db.js
+require('dotenv').config();        
+const pool = require('./db');       
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Arquivos estáticos (imagens salvas em disco, se usar)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// Deixa o pool disponível em todas as rotas (req.pool)
 app.use((req, _res, next) => {
   req.pool = pool;
   next();
 });
 
-// Rotas principais
 const bueirosRoutes = require('./routes/bueiros');
 app.use('/api', bueirosRoutes);
 
 const relatosRoutes = require('./routes/relatos');
 app.use('/api', relatosRoutes);
 
-// Login demo (ajuste conforme sua tabela de usuários)
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -47,7 +41,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Resumo de bueiros (ajuste a view resumo_bueiros no Supabase)
 app.get('/api/resumo', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM public.resumo_bueiros;');
@@ -63,7 +56,6 @@ app.get('/api/resumo', async (_req, res) => {
   }
 });
 
-// Rota de saúde do banco (debug da conexão Supabase)
 app.get('/api/health/db', async (_req, res) => {
   try {
     const r = await pool.query('SELECT NOW() AS now');
@@ -79,12 +71,10 @@ app.get('/api/health/db', async (_req, res) => {
   }
 });
 
-// Rota inicial simples
 app.get('/', (_req, res) => {
-  res.send('🌱 Green Sight API ativa e conectada ao Supabase!');
+  res.send('API ativa e conectada ao Supabase!');
 });
 
-// Start
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });

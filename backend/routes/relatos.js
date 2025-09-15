@@ -14,16 +14,13 @@ async function isAdmin(req, res, next) {
 
     try {
       const q = await req.pool.query(
-        'SELECT is_admin, email FROM public.usuarios WHERE LOWER(email) = $1 LIMIT 1',
+        'SELECT is_admin FROM public.usuarios WHERE LOWER(email) = $1 LIMIT 1',
         [userEmail]
       );
-      const row = q.rows[0];
-      const adminByDb = !!row?.is_admin;
-
+      const adminByDb = !!q.rows[0]?.is_admin;
       const adminByDomain = /@admgreensight\.com$/i.test(userEmail);
-
       if (adminByDb || adminByDomain) return next();
-    } catch (_) {
+    } catch {
       if (/@admgreensight\.com$/i.test(userEmail)) return next();
     }
 
@@ -35,57 +32,70 @@ async function isAdmin(req, res, next) {
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
-    const base = path
-      .basename(file.originalname || 'img', ext)
-      .replace(/\s+/g, '_');
+    const base = path.basename(file.originalname || 'img', ext).replace(/\s+/g, '_');
     cb(null, `${Date.now()}_${base}${ext}`);
   },
 });
+
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, 
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Envie apenas imagens'));
+    if (!file) return cb(null, true);
+    if (file.mimetype?.startsWith('image/')) return cb(null, true);
+    return cb(new Error('Envie apenas imagens'));
   },
 });
 
 router.get('/relatos', async (req, res) => {
   try {
     const { rows } = await req.pool.query(
-      `SELECT id, author, comment, address, image_path, created_at
+      `SELECT id, author, latitude, longitude, image_path, created_at
          FROM public.relatos
         ORDER BY created_at DESC`
     );
-    res.json(rows);
+    return res.json(rows);
   } catch (err) {
     console.error('Erro ao listar relatos:', err);
-    res.status(500).json({ message: 'Erro ao listar relatos' });
+    return res.status(500).json({ message: 'Erro ao listar relatos' });
   }
 });
 
+function toNum(v) {
+  if (v == null) return NaN;
+  return parseFloat(String(v).trim().replace(',', '.'));
+}
+
 router.post('/relatos', upload.single('image'), async (req, res) => {
-  const { author, comment, address } = req.body;
   try {
-    if (!author?.trim() || !comment?.trim() || !address?.trim() || !req.file) {
+    const { author, latitude, longitude } = req.body;
+
+    const lat = toNum(latitude);
+    const lon = toNum(longitude);
+
+    if (!author?.trim() || !Number.isFinite(lat) || !Number.isFinite(lon)) {
       return res.status(400).json({ message: 'Campos obrigatórios ausentes.' });
     }
-    const imagePath = `/uploads/${req.file.filename}`;
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return res.status(400).json({ message: 'Coordenadas inválidas.' });
+    }
+
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     const { rows } = await req.pool.query(
-      `INSERT INTO public.relatos (author, comment, address, image_path)
+      `INSERT INTO public.relatos (author, latitude, longitude, image_path)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, author, comment, address, image_path, created_at`,
-      [author.trim(), comment.trim(), address.trim(), imagePath]
+       RETURNING id, author, latitude, longitude, image_path, created_at`,
+      [author.trim(), lat, lon, imagePath]
     );
 
-    res.status(201).json(rows[0]);
+    return res.status(201).json(rows[0]);
   } catch (err) {
     console.error('Erro ao criar relato:', err);
-    res.status(500).json({ message: 'Erro ao salvar relato' });
+    return res.status(500).json({ message: 'Erro ao salvar relato' });
   }
 });
 
@@ -110,7 +120,7 @@ router.delete('/relatos/:id', isAdmin, async (req, res) => {
       fs.unlink(fileOnDisk, () => {});
     }
 
-    return res.json({ ok: true });
+    return res.sendStatus(204);
   } catch (err) {
     console.error('Erro ao excluir relato:', err);
     return res.status(500).json({ message: 'Erro ao excluir relato.' });

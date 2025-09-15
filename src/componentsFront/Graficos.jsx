@@ -13,28 +13,30 @@ import {
 } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
-// 🔹 Base da API via env (Vercel: REACT_APP_API_BASE_URL | Vite: VITE_API_BASE_URL)
-const API = (
-  import.meta?.env?.VITE_API_BASE_URL ||
+const API_BASE =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
   process.env.REACT_APP_API_BASE_URL ||
-  ""
-).replace(/\/$/, "");
+  (typeof window !== "undefined" && window.__API_BASE__) ||
+  "http://localhost:3001";
+
+const API = `${String(API_BASE).replace(/\/$/, "")}/api`;
 
 const CHART_HEIGHT = 340;
 
-// paleta fixa para zonas (evita variação entre renders)
-const ZONAS_COLORS = ["#22c55e", "#3b82f6", "#a855f7", "#f59e0b", "#ef4444", "#10b981", "#06b6d4", "#e11d48"];
+const ZONAS_COLORS = [
+  "#22c55e", "#3b82f6", "#a855f7", "#f59e0b",
+  "#ef4444", "#10b981", "#06b6d4", "#e11d48"
+];
 
 const Graficos = () => {
   const [resumo, setResumo] = useState(null);
-  const [bueiros, setBueiros] = useState([]);       // fallback p/ série diária
-  const [serieAPI, setSerieAPI] = useState(null);   // série diária da API (view)
-  const [zonasData, setZonasData] = useState(null); // dados por zona
+  const [bueiros, setBueiros] = useState([]);      
+  const [serieAPI, setSerieAPI] = useState(null);  
+  const [zonasData, setZonasData] = useState(null); 
   const [zonasErr, setZonasErr] = useState(null);
 
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
 
-  // ---- RESUMO (view resumo_bueiros)
   useEffect(() => {
     fetch(`${API}/resumo`)
       .then((r) => r.json())
@@ -42,7 +44,6 @@ const Graficos = () => {
       .catch((e) => console.error("Erro /resumo:", e));
   }, []);
 
-  // ---- SÉRIE DIÁRIA (view bueiros_por_dia) c/ fallback em /bueiros
   useEffect(() => {
     fetch(`${API}/bueiros_por_dia`)
       .then(async (r) => {
@@ -58,7 +59,6 @@ const Graficos = () => {
       });
   }, []);
 
-  // ---- ZONAS (usa sua rota do backend)
   useEffect(() => {
     fetch(`${API}/bueiros/por-zona`)
       .then(async (r) => {
@@ -73,7 +73,6 @@ const Graficos = () => {
       });
   }, []);
 
-  // ---------- HELPERS ----------
   function onlyDate(iso) {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return null;
@@ -83,7 +82,6 @@ const Graficos = () => {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  // Série final dos últimos 30 dias (usa série da API; senão computa via /bueiros)
   const mapeadosSerie = useMemo(() => {
     if (Array.isArray(serieAPI) && serieAPI.length) {
       return serieAPI.map((p) => {
@@ -123,7 +121,6 @@ const Graficos = () => {
   );
   const hasMapeados = mapeadosSerie.some((p) => p.mapeados > 0);
 
-  // Normaliza dados por zona para Pizza
   const zonasPieData = useMemo(() => {
     if (!Array.isArray(zonasData)) return [];
     return zonasData.map((z) => ({
@@ -170,7 +167,6 @@ const Graficos = () => {
           Indicadores do Mapeamento de Bueiros
         </h1>
 
-        {/* Série temporal */}
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">
@@ -212,7 +208,6 @@ const Graficos = () => {
           </div>
         </div>
 
-        {/* Pizza por Zonas */}
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Bueiros por zona</h2>

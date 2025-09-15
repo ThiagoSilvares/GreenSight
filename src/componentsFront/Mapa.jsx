@@ -13,14 +13,15 @@ import {
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 import MapComponent from './MapComponent';
 
-const MAP_CENTER = [-23.64601, -46.57590]; // [lat, lon]
+const MAP_CENTER = [-23.64601, -46.57590]; 
 
-// Base de API via variável de ambiente (Vite ou CRA) com fallback:
 const API_BASE =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  process.env.REACT_APP_API_BASE_URL ||
   (typeof window !== 'undefined' && window.__API_BASE__) ||
   'http://localhost:3001';
+
+const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
 
 const Mapa = () => {
   const [sidebarAberta, setSidebarAberta] = useState(false);
@@ -37,23 +38,22 @@ const Mapa = () => {
   }, [navigate]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/resumo`)
+    fetch(`${API}/resumo`)
       .then((res) => res.json())
       .then((data) => setDadosResumo(data))
       .catch((err) => console.error('Erro ao buscar resumo:', err));
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/bueiros`)
+    fetch(`${API}/bueiros`)
       .then((res) => res.json())
       .then((data) => setBueirosMapa(data))
       .catch((err) => console.error('Erro ao buscar bueiros do mapa:', err));
   }, []);
 
-  // Busca contagem por zona no backend (quadrantes ou polígonos se existir tabela zonas)
   useEffect(() => {
     const [lat0, lon0] = MAP_CENTER;
-    fetch(`${API_BASE}/api/bueiros/por-zona?lat0=${lat0}&lon0=${lon0}`)
+    fetch(`${API}/bueiros/por-zona?lat0=${lat0}&lon0=${lon0}`)
       .then((r) => r.json())
       .then((rows) => {
         const z = { norte: 0, sul: 0, leste: 0, oeste: 0 };
@@ -143,14 +143,12 @@ const Mapa = () => {
             <MapComponent bueiros={bueirosMapa} markerColor="#3b82f6" />
           </div>
 
-          {/* Legenda única (azul) */}
           <div className="mt-6 flex justify-center text-sm text-zinc-300">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-blue-500"></span> Bueiros Cadastrados
             </div>
           </div>
 
-          {/* Cards */}
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map(([titulo, valor], index) => (
               <div key={index} className="bg-zinc-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
