@@ -4,8 +4,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const pool = require('../db');
+
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 async function isAdmin(req, res, next) {
   try {
@@ -13,7 +15,7 @@ async function isAdmin(req, res, next) {
     if (!userEmail) return res.status(401).json({ message: 'Não autenticado.' });
 
     try {
-      const q = await req.pool.query(
+      const q = await pool.query( 
         'SELECT is_admin FROM public.usuarios WHERE LOWER(email) = $1 LIMIT 1',
         [userEmail]
       );
@@ -50,9 +52,9 @@ const upload = multer({
   },
 });
 
-router.get('/relatos', async (req, res) => {
+router.get('/relatos', async (_req, res) => {
   try {
-    const { rows } = await req.pool.query(
+    const { rows } = await pool.query( 
       `SELECT id, author, latitude, longitude, image_path, created_at
          FROM public.relatos
         ORDER BY created_at DESC`
@@ -72,7 +74,6 @@ function toNum(v) {
 router.post('/relatos', upload.single('image'), async (req, res) => {
   try {
     const { author, latitude, longitude } = req.body;
-
     const lat = toNum(latitude);
     const lon = toNum(longitude);
 
@@ -85,7 +86,7 @@ router.post('/relatos', upload.single('image'), async (req, res) => {
 
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const { rows } = await req.pool.query(
+    const { rows } = await pool.query( 
       `INSERT INTO public.relatos (author, latitude, longitude, image_path)
        VALUES ($1, $2, $3, $4)
        RETURNING id, author, latitude, longitude, image_path, created_at`,
@@ -95,6 +96,9 @@ router.post('/relatos', upload.single('image'), async (req, res) => {
     return res.status(201).json(rows[0]);
   } catch (err) {
     console.error('Erro ao criar relato:', err);
+    if (err.name === 'MulterError') {
+      return res.status(400).json({ message: err.message || 'Falha no upload.' });
+    }
     return res.status(500).json({ message: 'Erro ao salvar relato' });
   }
 });
@@ -103,7 +107,7 @@ router.delete('/relatos/:id', isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const del = await req.pool.query(
+    const del = await pool.query(
       `DELETE FROM public.relatos
         WHERE id = $1
       RETURNING image_path`,
