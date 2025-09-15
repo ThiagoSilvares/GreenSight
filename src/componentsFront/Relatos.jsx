@@ -4,10 +4,10 @@ import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaTrash, FaChartBar } from "r
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
 const API_BASE_RAW =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
-  (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE_URL) ||
-  (typeof window !== "undefined" && window.__API_BASE__) ||
-  "http://localhost:3001";
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  process.env.REACT_APP_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  'http://localhost:3001';
 
 const API_BASE = String(API_BASE_RAW).replace(/\/$/, "");
 const API = `${API_BASE}/api`;
