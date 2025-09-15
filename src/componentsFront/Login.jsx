@@ -11,6 +11,9 @@ const Login = () => {
   const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
+  // 🔹 Usa variável de ambiente (REACT_APP_API_BASE_URL no Vercel)
+  const API = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
+
   const togglePassword = () => setShowPassword((v) => !v);
 
   const handleLogin = async (e) => {
@@ -18,16 +21,29 @@ const Login = () => {
     setErro('');
 
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
+      const response = await fetch(`${API}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
       });
 
+      // Se resposta não for ok
+      if (!response.ok) {
+        let msg = 'Erro ao conectar com o servidor';
+        try {
+          const err = await response.json();
+          msg = err?.mensagem || msg;
+        } catch {}
+        setErro(msg);
+        return;
+      }
+
       const data = await response.json();
 
-      if (response.ok && data.sucesso) {
-        const papel = email.includes('@admgreensight') ? 'Administrador' : 'Funcionário';
+      if (data?.sucesso) {
+        const papel = email.includes('@admgreensight')
+          ? 'Administrador'
+          : 'Funcionário';
 
         const usuario = {
           email,
@@ -41,7 +57,7 @@ const Login = () => {
 
         navigate('/');
       } else {
-        setErro(data.mensagem || 'Erro ao fazer login');
+        setErro(data?.mensagem || 'Erro ao fazer login');
       }
     } catch (error) {
       console.error('Erro de rede:', error);
@@ -115,7 +131,9 @@ const Login = () => {
           </div>
 
           <div className="text-left text-sm">
-            <a href="#" className="text-gray-300 underline">Esqueci minha senha</a>
+            <a href="#" className="text-gray-300 underline">
+              Esqueci minha senha
+            </a>
           </div>
 
           {erro && <div className="text-red-500 text-sm mt-2">{erro}</div>}

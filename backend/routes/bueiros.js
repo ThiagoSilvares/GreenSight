@@ -1,4 +1,3 @@
-// routes/bueiros.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
@@ -9,12 +8,11 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Nome da cidade alvo (pode virar .env depois)
-const CITY_NAME = 'São Caetano do Sul';
+const CITY_NAME = process.env.CITY_NAME || 'São Caetano do Sul';
 
 /**
  * GET /bueiros
  * Retorna array simples para o mapa: id, data, latitude, longitude.
- * (Mantido como estava: lista todos os bueiros com coordenadas)
  */
 router.get('/bueiros', async (_req, res) => {
   try {
@@ -30,64 +28,65 @@ router.get('/bueiros', async (_req, res) => {
       ORDER BY id DESC;
       `
     );
-    return res.json(result.rows);
+    return res.json(result.rows); // ARRAY puro
   } catch (err) {
     console.error('❌ Erro ao listar bueiros:', err.message);
-    return res
-      .status(500)
-      .json({ erro: 'Erro ao listar bueiros.', detalhe: err.message });
+    return res.status(500).json([]); // mantém contrato de array
   }
 });
 
 /**
  * GET /bueiros/por-zona?lat0=<lat>&lon0=<lon>
  * Conta bueiros por zona, priorizando:
- *   1) zonas + municipios (conta apenas dentro da cidade)
- *   2) zonas (sem filtro de cidade)
- *   3) municipios (quadrantes dentro da cidade usando lat0/lon0)
- *   4) fallback geral (quadrantes em lat0/lon0 sem filtro)
- *
- * Observações importantes:
- * - Usamos ST_Intersects no join com zonas para não perder pontos na borda.
- * - Quando houver municipio, filtramos com ST_Within(b.localizacao, cidade.geom).
+ *   1) zonas + municipio válido
+ *   2) apenas zonas
+ *   3) apenas municipio (quadrantes pelo centro)
+ *   4) fallback geral (quadrantes globais)
  */
 router.get('/bueiros/por-zona', async (req, res) => {
   const lat0 = Number.parseFloat(req.query.lat0) || -23.64601;
   const lon0 = Number.parseFloat(req.query.lon0) || -46.5759;
 
   try {
-    // Verificações de existência
+    // Verifica se as tabelas existem
     const meta = await pool.query(
       `
       SELECT
         EXISTS (
           SELECT 1 FROM information_schema.columns
-          WHERE table_schema = 'public' AND table_name = 'zonas' AND column_name = 'geom'
+          WHERE table_schema='public' AND table_name='zonas' AND column_name='geom'
         ) AS has_zonas,
         EXISTS (
           SELECT 1 FROM information_schema.columns
-          WHERE table_schema = 'public' AND table_name = 'municipios' AND column_name = 'geom'
+          WHERE table_schema='public' AND table_name='municipios' AND column_name='geom'
         ) AS has_municipios;
       `
     );
     const hasZonas = !!meta.rows[0]?.has_zonas;
     const hasMunicipios = !!meta.rows[0]?.has_municipios;
 
-    // Caso 1: ZONAS + MUNICIPIOS -> zonas recortadas + filtro cidade
-    if (hasZonas && hasMunicipios) {
+    // Verifica se existe o município alvo
+    let hasCidade = false;
+    if (hasMunicipios) {
+      const rCidade = await pool.query(
+        `SELECT EXISTS(SELECT 1 FROM public.municipios WHERE nome ILIKE $1) AS ok`,
+        [CITY_NAME]
+      );
+      hasCidade = !!rCidade.rows[0]?.ok;
+    }
+
+    // Caso 1: ZONAS + MUNICÍPIO válido
+    if (hasZonas && hasCidade) {
       const r = await pool.query(
         `
         WITH cidade AS (
-          SELECT geom
-          FROM public.municipios
-          WHERE nome ILIKE $1
-          LIMIT 1
+          SELECT geom FROM public.municipios WHERE nome ILIKE $1 LIMIT 1
         )
         SELECT z.nome AS zona, COALESCE(COUNT(b.id),0)::int AS total
         FROM public.zonas z
         LEFT JOIN public.bueiros b
           ON ST_Intersects(b.localizacao, z.geom)
-         AND ST_Within(b.localizacao, (SELECT geom FROM cidade))
+         AND ST_Covers((SELECT geom FROM cidade), b.localizacao)
         GROUP BY z.nome
         ORDER BY z.nome;
         `,
@@ -96,7 +95,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
       return res.json(r.rows);
     }
 
-    // Caso 2: apenas ZONAS -> conta por zonas (sem filtro de cidade)
+    // Caso 2: apenas ZONAS
     if (hasZonas) {
       const r = await pool.query(
         `
@@ -111,15 +110,12 @@ router.get('/bueiros/por-zona', async (req, res) => {
       return res.json(r.rows);
     }
 
-    // Caso 3: apenas MUNICIPIOS -> quadrantes exclusivos dentro da cidade
-    if (hasMunicipios) {
+    // Caso 3: apenas MUNICÍPIO (quadrantes pelo centro)
+    if (hasCidade) {
       const r = await pool.query(
         `
         WITH cidade AS (
-          SELECT geom
-          FROM public.municipios
-          WHERE nome ILIKE $1
-          LIMIT 1
+          SELECT geom FROM public.municipios WHERE nome ILIKE $1 LIMIT 1
         )
         SELECT
           CASE
@@ -130,7 +126,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
           END AS zona,
           COUNT(*)::int AS total
         FROM public.bueiros b
-        WHERE ST_Within(b.localizacao, (SELECT geom FROM cidade))
+        WHERE ST_Covers((SELECT geom FROM cidade), b.localizacao)
         GROUP BY zona
         ORDER BY zona;
         `,
@@ -139,7 +135,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
       return res.json(r.rows);
     }
 
-    // Caso 4: fallback geral -> quadrantes exclusivos pelo centro
+    // Caso 4: fallback geral (quadrantes globais)
     const r = await pool.query(
       `
       SELECT
@@ -158,17 +154,15 @@ router.get('/bueiros/por-zona', async (req, res) => {
     );
     return res.json(r.rows);
   } catch (err) {
-    console.error('❌ Erro em /bueiros/por-zona:', err.message);
-    return res
-      .status(500)
-      .json({ erro: 'Erro ao calcular bueiros por zona.', detalhe: err.message });
+    console.error('❌ Erro em /bueiros/por-zona:', err);
+    return res.status(500).json([]); // mantém contrato de array
   }
 });
 
 /**
  * POST /bueiros
  * Cadastra bueiro (imagem opcional).
- * Campos: latitude (num), longitude (num), imagem (file "imagem" - opcional)
+ * Campos: latitude, longitude, imagem (opcional)
  */
 router.post('/bueiros', upload.single('imagem'), async (req, res) => {
   const { latitude, longitude } = req.body;

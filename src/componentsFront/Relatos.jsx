@@ -3,7 +3,21 @@ import { Link, useLocation } from "react-router-dom";
 import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaTrash, FaChartBar } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
-const API = "http://localhost:3001/api";
+// ===== Base de API via variável de ambiente (Vite ou CRA) com fallback =====
+const API_BASE =
+  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  (typeof process !== "undefined" && process.env && process.env.REACT_APP_API_BASE_URL) ||
+  (typeof window !== "undefined" && window.__API_BASE__) ||
+  "http://localhost:3001";
+
+const API = `${API_BASE}/api`;
+
+// Converte caminhos relativos (ex.: "/uploads/xyz.jpg") em URL absoluta
+const toAbsoluteUrl = (url) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url; // já é absoluta
+  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 const Relatos = () => {
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
@@ -241,7 +255,7 @@ const Relatos = () => {
                   </p>
                   {p.imageUrl && (
                     <img
-                      src={`http://localhost:3001${p.imageUrl}`}
+                      src={toAbsoluteUrl(p.imageUrl)}
                       alt="Imagem do relato"
                       className="mt-4 w-full max-h-[300px] object-contain rounded bg-black"
                     />

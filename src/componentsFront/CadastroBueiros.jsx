@@ -9,6 +9,13 @@ import {
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
+// 🔹 Base da API via env (Vercel: REACT_APP_API_BASE_URL | Vite: VITE_API_BASE_URL)
+const API = (
+  import.meta?.env?.VITE_API_BASE_URL ||
+  process.env.REACT_APP_API_BASE_URL ||
+  ''
+).replace(/\/$/, '');
+
 const CadastroBueiros = () => {
   const navigate = useNavigate();
 
@@ -22,7 +29,7 @@ const CadastroBueiros = () => {
   const [bueirosExistentes, setBueirosExistentes] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/bueiros')
+    fetch(`${API}/bueiros`)
       .then(res => res.json())
       .then(data => setBueirosExistentes(data))
       .catch(err => console.error('Erro ao buscar bueiros existentes:', err));
@@ -69,7 +76,7 @@ const CadastroBueiros = () => {
     if (imagem) data.append('imagem', imagem); // opcional
 
     try {
-      const resposta = await fetch('http://localhost:3001/api/bueiros', {
+      const resposta = await fetch(`${API}/bueiros`, {
         method: 'POST',
         body: data,
       });
@@ -79,7 +86,7 @@ const CadastroBueiros = () => {
         setFormData({ latitude: '', longitude: '' });
         setImagem(null);
 
-        const atualizados = await fetch('http://localhost:3001/api/bueiros');
+        const atualizados = await fetch(`${API}/bueiros`);
         const dadosAtualizados = await atualizados.json();
         setBueirosExistentes(dadosAtualizados);
       } else {
@@ -125,7 +132,7 @@ const CadastroBueiros = () => {
         <h1 className="text-3xl md:text-4xl font-bold mb-8">Cadastro de Bueiros</h1>
 
         {mensagem && (
-          <p className={`mb-4 text-sm ${mensagem.includes('sucesso') ? 'text-green-400' : 'text-red-400'}`}>
+          <p className={`mb-4 text-sm ${mensagem.toLowerCase().includes('sucesso') ? 'text-green-400' : 'text-red-400'}`}>
             {mensagem}
           </p>
         )}

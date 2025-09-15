@@ -13,7 +13,13 @@ import {
 } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
-const API = "http://localhost:3001/api";
+// 🔹 Base da API via env (Vercel: REACT_APP_API_BASE_URL | Vite: VITE_API_BASE_URL)
+const API = (
+  import.meta?.env?.VITE_API_BASE_URL ||
+  process.env.REACT_APP_API_BASE_URL ||
+  ""
+).replace(/\/$/, "");
+
 const CHART_HEIGHT = 340;
 
 // paleta fixa para zonas (evita variação entre renders)

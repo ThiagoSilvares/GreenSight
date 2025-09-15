@@ -15,6 +15,13 @@ import MapComponent from './MapComponent';
 
 const MAP_CENTER = [-23.64601, -46.57590]; // [lat, lon]
 
+// Base de API via variável de ambiente (Vite ou CRA) com fallback:
+const API_BASE =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) ||
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  'http://localhost:3001';
+
 const Mapa = () => {
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const [dadosResumo, setDadosResumo] = useState(null);
@@ -30,14 +37,14 @@ const Mapa = () => {
   }, [navigate]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/resumo')
+    fetch(`${API_BASE}/api/resumo`)
       .then((res) => res.json())
       .then((data) => setDadosResumo(data))
       .catch((err) => console.error('Erro ao buscar resumo:', err));
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/bueiros')
+    fetch(`${API_BASE}/api/bueiros`)
       .then((res) => res.json())
       .then((data) => setBueirosMapa(data))
       .catch((err) => console.error('Erro ao buscar bueiros do mapa:', err));
@@ -46,7 +53,7 @@ const Mapa = () => {
   // Busca contagem por zona no backend (quadrantes ou polígonos se existir tabela zonas)
   useEffect(() => {
     const [lat0, lon0] = MAP_CENTER;
-    fetch(`http://localhost:3001/api/bueiros/por-zona?lat0=${lat0}&lon0=${lon0}`)
+    fetch(`${API_BASE}/api/bueiros/por-zona?lat0=${lat0}&lon0=${lon0}`)
       .then((r) => r.json())
       .then((rows) => {
         const z = { norte: 0, sul: 0, leste: 0, oeste: 0 };
