@@ -13,6 +13,7 @@ Comandos:
 - npm install multer --legacy-peer-deps
 - yarn add axios
 - npm install recharts --legacy-peer-deps
+- npm run build
 
 Rodar:
 
