@@ -4,11 +4,12 @@ import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 import LogoGreenSight from '../assets/LogoGreenSight.png';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
-// ===== Base de API via variável de ambiente (Vite ou CRA) com fallback =====
+// CRA usa REACT_APP_*, Vite usa import.meta.env.VITE_*.
+// NUNCA use "typeof process !== 'undefined'" aqui, pois quebra a substituição do CRA.
 const API_BASE =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) ||
-  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  process.env.REACT_APP_API_BASE_URL ||                       // CRA (substituído por string no build)
+  (typeof window !== 'undefined' && window.__API_BASE__) ||   // fallback opcional
   'http://localhost:3001';
 
 const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
