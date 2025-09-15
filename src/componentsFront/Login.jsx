@@ -4,15 +4,21 @@ import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 import LogoGreenSight from '../assets/LogoGreenSight.png';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
+// ===== Base de API via variável de ambiente (Vite ou CRA) com fallback =====
+const API_BASE =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) ||
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  'http://localhost:3001';
+
+const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const navigate = useNavigate();
-
-  // 🔹 Usa variável de ambiente (REACT_APP_API_BASE_URL no Vercel)
-  const API = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
 
   const togglePassword = () => setShowPassword((v) => !v);
 
@@ -27,7 +33,6 @@ const Login = () => {
         body: JSON.stringify({ email, senha }),
       });
 
-      // Se resposta não for ok
       if (!response.ok) {
         let msg = 'Erro ao conectar com o servidor';
         try {
@@ -41,20 +46,15 @@ const Login = () => {
       const data = await response.json();
 
       if (data?.sucesso) {
-        const papel = email.includes('@admgreensight')
-          ? 'Administrador'
-          : 'Funcionário';
-
+        const papel = email.includes('@admgreensight') ? 'Administrador' : 'Funcionário';
         const usuario = {
           email,
           nome: data?.usuario?.nome || '',
           papel,
           ...data?.usuario,
         };
-
         localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
         localStorage.setItem('usuario', JSON.stringify(usuario));
-
         navigate('/');
       } else {
         setErro(data?.mensagem || 'Erro ao fazer login');
@@ -87,11 +87,7 @@ const Login = () => {
 
       <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-8 -mt-12">
         <Link to="/">
-          <img
-            src={LogoEscrita}
-            alt="Logo Escrita Green Sight"
-            className="h-20 w-auto cursor-pointer"
-          />
+          <img src={LogoEscrita} alt="Logo Escrita Green Sight" className="h-20 w-auto cursor-pointer" />
         </Link>
 
         <form onSubmit={handleLogin} className="w-full max-w-lg mt-4 space-y-6">
@@ -131,17 +127,12 @@ const Login = () => {
           </div>
 
           <div className="text-left text-sm">
-            <a href="#" className="text-gray-300 underline">
-              Esqueci minha senha
-            </a>
+            <a href="#" className="text-gray-300 underline">Esqueci minha senha</a>
           </div>
 
           {erro && <div className="text-red-500 text-sm mt-2">{erro}</div>}
 
-          <button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-500 text-white py-2 font-semibold text-base rounded-md"
-          >
+          <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white py-2 font-semibold text-base rounded-md">
             ENTRAR
           </button>
         </form>
