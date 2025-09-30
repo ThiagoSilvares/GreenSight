@@ -118,12 +118,6 @@ const Mapa = () => {
                 <FaPlus size={20} /> Cadastro de Bueiros
               </li>
               <li
-                onClick={() => navigate('/relatorios')}
-                className="hover:text-green-400 cursor-pointer flex items-center gap-3"
-              >
-                <FaFileAlt size={20} /> Relatórios
-              </li>
-              <li
                 onClick={() => setMostrarConfirmacaoLogout(true)}
                 className="hover:text-green-400 cursor-pointer flex items-center gap-3"
               >
