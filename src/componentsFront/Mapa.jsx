@@ -56,13 +56,14 @@ const Mapa = () => {
     fetch(`${API}/bueiros/por-zona?lat0=${lat0}&lon0=${lon0}`)
       .then((r) => r.json())
       .then((rows) => {
-        const z = { norte: 0, sul: 0, leste: 0, oeste: 0 };
+        const z = { norte: 0, sul: 0, leste: 0, oeste: 0, outros: 0 };
         rows?.forEach((x) => {
-          const key =
-            /norte/i.test(x.zona) ? 'norte' :
-            /sul/i.test(x.zona)   ? 'sul'   :
-            /leste/i.test(x.zona) ? 'leste' : 'oeste';
-          z[key] = x.total ?? 0;
+          const nome = (x.zona || '').toString();
+          if (/norte/i.test(nome)) z.norte += x.total ?? 0;
+          else if (/sul/i.test(nome)) z.sul += x.total ?? 0;
+          else if (/leste/i.test(nome)) z.leste += x.total ?? 0;
+          else if (/oeste/i.test(nome)) z.oeste += x.total ?? 0;
+          else z.outros += x.total ?? 0;
         });
         setZonas(z);
       })

@@ -1,3 +1,5 @@
+'use strict';
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
@@ -34,8 +36,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
   const lon0 = Number.parseFloat(req.query.lon0) || -46.5759;
 
   try {
-    const meta = await pool.query(
-      `
+    const meta = await pool.query(`
       SELECT
         EXISTS (
           SELECT 1 FROM information_schema.columns
@@ -45,8 +46,8 @@ router.get('/bueiros/por-zona', async (req, res) => {
           SELECT 1 FROM information_schema.columns
           WHERE table_schema='public' AND table_name='municipios' AND column_name='geom'
         ) AS has_municipios;
-      `
-    );
+    `);
+
     const hasZonas = !!meta.rows[0]?.has_zonas;
     const hasMunicipios = !!meta.rows[0]?.has_municipios;
 
@@ -63,15 +64,43 @@ router.get('/bueiros/por-zona', async (req, res) => {
       const r = await pool.query(
         `
         WITH cidade AS (
-          SELECT geom FROM public.municipios WHERE nome ILIKE $1 LIMIT 1
+          SELECT geom, ST_SRID(geom) AS srid
+          FROM public.municipios
+          WHERE nome ILIKE $1
+          LIMIT 1
+        ),
+        -- bueiros dentro do município (SRID normalizado para o SRID do polígono municipal)
+        b_in AS (
+          SELECT b.id, b.localizacao
+          FROM public.bueiros b, cidade c
+          WHERE ST_Within(ST_Transform(b.localizacao, c.srid), c.geom)
+        ),
+        contagem AS (
+          SELECT z.nome AS zona, COUNT(b.id)::int AS total
+          FROM public.zonas z
+          LEFT JOIN b_in b
+            ON ST_Within(
+                 ST_Transform(b.localizacao, ST_SRID(z.geom)),
+                 z.geom
+               )
+          GROUP BY z.nome
+        ),
+        sem_zona AS (
+          SELECT 'Sem Zona'::text AS zona, COUNT(*)::int AS total
+          FROM b_in b
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM public.zonas z
+            WHERE ST_Within(
+                    ST_Transform(b.localizacao, ST_SRID(z.geom)),
+                    z.geom
+                  )
+          )
         )
-        SELECT z.nome AS zona, COALESCE(COUNT(b.id),0)::int AS total
-        FROM public.zonas z
-        LEFT JOIN public.bueiros b
-          ON ST_Intersects(b.localizacao, z.geom)
-         AND ST_Covers((SELECT geom FROM cidade), b.localizacao)
-        GROUP BY z.nome
-        ORDER BY z.nome;
+        SELECT * FROM contagem
+        UNION ALL
+        SELECT * FROM sem_zona
+        ORDER BY zona;
         `,
         [CITY_NAME]
       );
@@ -81,37 +110,34 @@ router.get('/bueiros/por-zona', async (req, res) => {
     if (hasZonas) {
       const r = await pool.query(
         `
-        SELECT z.nome AS zona, COALESCE(COUNT(b.id),0)::int AS total
-        FROM public.zonas z
-        LEFT JOIN public.bueiros b
-          ON ST_Intersects(b.localizacao, z.geom)
-        GROUP BY z.nome
-        ORDER BY z.nome;
-        `
-      );
-      return res.json(r.rows);
-    }
-
-    if (hasCidade) {
-      const r = await pool.query(
-        `
-        WITH cidade AS (
-          SELECT geom FROM public.municipios WHERE nome ILIKE $1 LIMIT 1
+        WITH b_all AS (SELECT id, localizacao FROM public.bueiros),
+        contagem AS (
+          SELECT z.nome AS zona, COUNT(b.id)::int AS total
+          FROM public.zonas z
+          LEFT JOIN b_all b
+            ON ST_Within(
+                 ST_Transform(b.localizacao, ST_SRID(z.geom)),
+                 z.geom
+               )
+          GROUP BY z.nome
+        ),
+        sem_zona AS (
+          SELECT 'Sem Zona'::text AS zona, COUNT(*)::int AS total
+          FROM b_all b
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM public.zonas z
+            WHERE ST_Within(
+                    ST_Transform(b.localizacao, ST_SRID(z.geom)),
+                    z.geom
+                  )
+          )
         )
-        SELECT
-          CASE
-            WHEN ST_Y(b.localizacao) >= $2 AND ST_X(b.localizacao) >= $3 THEN 'Zona Norte'
-            WHEN ST_Y(b.localizacao)  < $2 AND ST_X(b.localizacao) >= $3 THEN 'Zona Leste'
-            WHEN ST_Y(b.localizacao)  < $2 AND ST_X(b.localizacao)  < $3 THEN 'Zona Sul'
-            ELSE 'Zona Oeste'
-          END AS zona,
-          COUNT(*)::int AS total
-        FROM public.bueiros b
-        WHERE ST_Covers((SELECT geom FROM cidade), b.localizacao)
-        GROUP BY zona
+        SELECT * FROM contagem
+        UNION ALL
+        SELECT * FROM sem_zona
         ORDER BY zona;
-        `,
-        [CITY_NAME, lat0, lon0]
+        `
       );
       return res.json(r.rows);
     }
@@ -135,10 +161,9 @@ router.get('/bueiros/por-zona', async (req, res) => {
     return res.json(r.rows);
   } catch (err) {
     console.error('❌ Erro em /bueiros/por-zona:', err);
-    return res.status(500).json([]); 
+    return res.status(500).json([]);
   }
 });
-
 router.post('/bueiros', upload.single('imagem'), async (req, res) => {
   const { latitude, longitude } = req.body;
   const imagem = req.file?.buffer ?? null;
