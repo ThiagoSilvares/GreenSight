@@ -19,3 +19,7 @@ Rodar:
 
 - yarn start
 - node backend/index.js
+- arquivo jsonl: 
+cd "C:\Users\thiag\OneDrive\Área de Trabalho\GreenSightTCC\backend"
+node ingest-jsonl.mjs "../detections_jetson-nano-01_2025-10-04T15.jsonl"
+
