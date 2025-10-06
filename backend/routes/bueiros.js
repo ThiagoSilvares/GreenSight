@@ -12,21 +12,38 @@ const CITY_NAME = process.env.CITY_NAME || 'São Caetano do Sul';
 
 router.get('/bueiros', async (_req, res) => {
   try {
-    const result = await pool.query(
-      `
+    const { rows } = await pool.query(`
       SELECT
         id,
         data_monitoramento,
-        ST_Y(localizacao) AS latitude,
-        ST_X(localizacao) AS longitude
+        lat  AS latitude,
+        lon  AS longitude,
+        conf
       FROM public.bueiros
-      WHERE localizacao IS NOT NULL
-      ORDER BY id DESC;
-      `
-    );
-    return res.json(result.rows);
+      ORDER BY data_monitoramento DESC NULLS LAST, id DESC;
+    `);
+    return res.json(rows);
   } catch (err) {
-    console.error('❌ Erro ao listar bueiros:', err.message);
+    console.error('❌ Erro ao listar bueiros:', err);
+    return res.status(500).json([]);
+  }
+});
+
+router.get('/bueiros-mapa', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        id,
+        data_monitoramento,
+        lat  AS latitude,
+        lon  AS longitude,
+        conf
+      FROM public.bueiros_mapa
+      ORDER BY data_monitoramento DESC NULLS LAST, id DESC;
+    `);
+    return res.json(rows);
+  } catch (err) {
+    console.error('❌ Erro em /bueiros-mapa:', err);
     return res.status(500).json([]);
   }
 });
@@ -178,7 +195,7 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
         .json({ erro: 'Latitude e longitude são obrigatórias e devem ser numéricas.' });
     }
 
-    const result = await pool.query(
+    const { rows } = await pool.query(
       `
       INSERT INTO public.bueiros (
         imagem,
@@ -199,10 +216,10 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
       [imagem, lon, lat]
     );
 
-    console.log('✅ Bueiro cadastrado:', result.rows[0]);
-    return res.status(201).json({ sucesso: true, bueiro: result.rows[0] });
+    console.log('✅ Bueiro cadastrado:', rows[0]);
+    return res.status(201).json({ sucesso: true, bueiro: rows[0] });
   } catch (err) {
-    console.error('❌ Erro ao cadastrar bueiro:', err.message);
+    console.error('❌ Erro ao cadastrar bueiro:', err);
     return res.status(500).json({
       erro: 'Erro ao cadastrar bueiro.',
       detalhe: err.message

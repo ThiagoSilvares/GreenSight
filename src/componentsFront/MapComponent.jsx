@@ -11,7 +11,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const isNum = (v) => Number.isFinite(v);
-const toFloat = (v) => (v == null ? NaN : parseFloat(v));
+const toFloat = (v) => (v == null || v === '' ? NaN : parseFloat(v));
 
 const parseWKTPoint = (wkt) => {
   if (typeof wkt !== 'string') return null;
@@ -21,10 +21,8 @@ const parseWKTPoint = (wkt) => {
 };
 
 const rowToPoint = (row) => {
-  let lat =
-    toFloat(row?.latitude ?? row?.lat ?? row?.y ?? row?.localizacao_lat);
-  let lon =
-    toFloat(row?.longitude ?? row?.lon ?? row?.lng ?? row?.x ?? row?.localizacao_lon);
+  let lat = toFloat(row?.latitude ?? row?.lat ?? row?.y ?? row?.localizacao_lat);
+  let lon = toFloat(row?.longitude ?? row?.lon ?? row?.lng ?? row?.x ?? row?.localizacao_lon);
 
   if (!isNum(lat) || !isNum(lon)) {
     const coords = row?.geometry?.coordinates;
@@ -36,31 +34,47 @@ const rowToPoint = (row) => {
 
   if ((!isNum(lat) || !isNum(lon)) && row?.localizacao && typeof row.localizacao === 'string') {
     const p = parseWKTPoint(row.localizacao);
-    if (p) {
-      lon = p.lon;
-      lat = p.lat;
-    }
+    if (p) { lon = p.lon; lat = p.lat; }
   }
 
   if (!isNum(lat) || !isNum(lon)) return null;
+
+  const conf = toFloat(
+    row?.conf ??
+    row?.conf_last ??               
+    row?.confidence ??
+    row?.properties?.conf ??
+    row?.properties?.confidence
+  );
 
   return {
     id: row?.id,
     lat,
     lon,
     date: row?.data_monitoramento ?? row?.properties?.data_monitoramento ?? null,
+    conf: isNum(conf) ? conf : null,
   };
 };
 
 const featureToPoint = (f) => {
   try {
-    const [lon, lat] = f?.geometry?.coordinates ?? [];
-    if (!isNum(parseFloat(lat)) || !isNum(parseFloat(lon))) return null;
+    const [lonRaw, latRaw] = f?.geometry?.coordinates ?? [];
+    const lat = toFloat(latRaw);
+    const lon = toFloat(lonRaw);
+    if (!isNum(lat) || !isNum(lon)) return null;
+
+    const conf = toFloat(
+      f?.properties?.conf ??
+      f?.properties?.conf_last ??
+      f?.properties?.confidence
+    );
+
     return {
       id: f?.id,
-      lat: parseFloat(lat),
-      lon: parseFloat(lon),
+      lat,
+      lon,
       date: f?.properties?.data_monitoramento ?? null,
+      conf: isNum(conf) ? conf : null,
     };
   } catch {
     return null;
@@ -84,7 +98,7 @@ const normalizeToPoints = (data) => {
 
 const MapComponent = ({
   bueiros,
-  markerColor = '#3b82f6', 
+  markerColor = '#3b82f6',
   center = [-23.64601, -46.5759],
   zoom = 17,
   height = 500,
@@ -123,14 +137,18 @@ const MapComponent = ({
         >
           <Popup>
             <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
-              <strong>Bueiro cadastrado</strong><br />
               {p.date && (
                 <>
                   <strong>Data:</strong> {new Date(p.date).toLocaleDateString('pt-BR')}<br />
                 </>
               )}
               <strong>Latitude:</strong> {p.lat}<br />
-              <strong>Longitude:</strong> {p.lon}
+              <strong>Longitude:</strong> {p.lon}<br />
+              {p.conf != null && (
+                <>
+                  <strong>Confiança:</strong> {Number(p.conf).toFixed(2)}
+                </>
+              )}
             </div>
           </Popup>
         </Marker>
