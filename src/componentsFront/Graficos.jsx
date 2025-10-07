@@ -23,16 +23,36 @@ const API = `${String(API_BASE).replace(/\/$/, "")}/api`;
 
 const CHART_HEIGHT = 340;
 
-const ZONAS_COLORS = [
-  "#22c55e", "#3b82f6", "#a855f7", "#f59e0b",
-  "#ef4444", "#10b981", "#06b6d4", "#e11d48"
+const ZONAS_ORDER = [
+  { key: "leste", label: "Zona Leste", color: "#3b82f6" },
+  { key: "norte", label: "Zona Norte", color: "#a855f7" },
+  { key: "oeste", label: "Zona Oeste", color: "#f59e0b" },
+  { key: "sul",   label: "Zona Sul",   color: "#ef4444" },
 ];
+
+function LegendZonas() {
+  return (
+    <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 12 }}>
+      {ZONAS_ORDER.map(z => (
+        <div key={z.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 12, height: 12, background: z.color,
+              display: "inline-block", borderRadius: 2
+            }}
+          />
+          <span>{z.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const Graficos = () => {
   const [resumo, setResumo] = useState(null);
-  const [bueiros, setBueiros] = useState([]);      
-  const [serieAPI, setSerieAPI] = useState(null);  
-  const [zonasData, setZonasData] = useState(null); 
+  const [bueiros, setBueiros] = useState([]);
+  const [serieAPI, setSerieAPI] = useState(null);
+  const [zonasData, setZonasData] = useState(null);
   const [zonasErr, setZonasErr] = useState(null);
 
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
@@ -121,15 +141,38 @@ const Graficos = () => {
   );
   const hasMapeados = mapeadosSerie.some((p) => p.mapeados > 0);
 
-  const zonasPieData = useMemo(() => {
+  const zonasAll = useMemo(() => {
     if (!Array.isArray(zonasData)) return [];
-    return zonasData.map((z) => ({
-      name: z.zona ?? z.nome ?? "—",
-      value: Number(z.total_bueiros ?? z.total ?? 0),
+
+    const acc = Object.fromEntries(ZONAS_ORDER.map(z => [z.key, 0]));
+
+    for (const z of zonasData) {
+      const nome = String(z?.zona ?? z?.nome ?? "").toLowerCase().trim();
+      const valor = Number(z?.total_bueiros ?? z?.total ?? 0);
+
+      if (nome.includes("sem") && nome.includes("zona")) continue;
+
+      const found = ZONAS_ORDER.find(cfg => nome.includes(cfg.key));
+      if (found) acc[found.key] += (Number.isFinite(valor) ? valor : 0);
+    }
+
+    return ZONAS_ORDER.map(cfg => ({
+      key: cfg.key,
+      name: cfg.label,
+      value: acc[cfg.key] ?? 0,
+      color: cfg.color,
     }));
   }, [zonasData]);
 
-  const totalZonas = zonasPieData.reduce((acc, z) => acc + (Number.isFinite(z.value) ? z.value : 0), 0);
+  const zonasChart = useMemo(
+    () => zonasAll.filter(z => z.value > 0),
+    [zonasAll]
+  );
+
+  const totalZonas = useMemo(
+    () => zonasAll.reduce((acc, z) => acc + (Number.isFinite(z.value) ? z.value : 0), 0),
+    [zonasAll]
+  );
 
   return (
     <div className="bg-black min-h-screen text-white font-sans">
@@ -222,32 +265,31 @@ const Graficos = () => {
               <div className="h-full flex items-center justify-center text-zinc-300">
                 {zonasErr}. Certifique-se de expor <code>/bueiros/por-zona</code> no backend.
               </div>
-            ) : Array.isArray(zonasPieData) && zonasPieData.length > 0 ? (
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart margin={{ bottom: 40 }}>
                   <Pie
-                    data={zonasPieData}
+                    data={zonasChart}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
                     cy="50%"
                     outerRadius={120}
                     label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
+                      Number.isFinite(percent) ? `${name}: ${(percent * 100).toFixed(0)}%` : ""
                     }
+                    isAnimationActive={false}
                   >
-                    {zonasPieData.map((_, i) => (
-                      <Cell key={i} fill={ZONAS_COLORS[i % ZONAS_COLORS.length]} />
+                    {zonasChart.map((item) => (
+                      <Cell key={item.key} fill={item.color} />
                     ))}
                   </Pie>
+
                   <Tooltip formatter={(v) => `${v} bueiro(s)`} />
-                  <Legend />
+
+                  <Legend verticalAlign="bottom" align="center" content={<LegendZonas />} />
                 </PieChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-zinc-300">
-                Sem dados por zona para exibir.
-              </div>
             )}
           </div>
         </div>
