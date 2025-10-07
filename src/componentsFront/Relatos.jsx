@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaTrash, FaChartBar } from "react-icons/fa";
+import {
+  FaUser,
+  FaMapMarkedAlt,
+  FaRegCommentDots,
+  FaTrash,
+  FaChartBar,
+  FaBars,
+  FaTimes,
+} from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
 const API_BASE_RAW =
@@ -11,6 +19,8 @@ const API_BASE_RAW =
 
 const API_BASE = String(API_BASE_RAW).replace(/\/$/, "");
 const API = `${API_BASE}/api`;
+
+const year = new Date().getFullYear();
 
 const toAbsoluteUrl = (url) => {
   if (!url) return "";
@@ -42,6 +52,8 @@ const Relatos = () => {
   const isActive = (path) =>
     location.pathname === path ? "text-green-500" : "hover:text-green-500";
 
+  const [navOpen, setNavOpen] = useState(false);
+
   const [showForm, setShowForm] = useState(false);
   const [author, setAuthor] = useState("");
   const [latText, setLatText] = useState("");
@@ -50,7 +62,13 @@ const Relatos = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null); 
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const onScroll = () => setNavOpen(false);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const fetchRelatos = async () => {
     try {
@@ -80,8 +98,8 @@ const Relatos = () => {
         createdAt: it.created_at,
       }));
 
-      setError(null);       
-      setPosts(mapped);    
+      setError(null);
+      setPosts(mapped);
     } catch (e) {
       console.error(e);
       if (posts.length > 0) setError("Não foi possível carregar os relatos.");
@@ -223,11 +241,16 @@ const Relatos = () => {
 
   return (
     <div className="bg-black text-white min-h-screen font-sans flex flex-col">
-      <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
+      <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-4 md:px-8 py-3 flex justify-between items-center shadow-md">
         <Link to="/" className="focus:outline-none">
-          <img src={LogoEscrita} alt="Logo Escrita Green Sight" className="h-14 w-auto object-contain cursor-pointer" />
+          <img
+            src={LogoEscrita}
+            alt="Logo Escrita Green Sight"
+            className="h-10 md:h-14 w-auto object-contain cursor-pointer"
+          />
         </Link>
-        <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100 flex items-center">
+
+        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100 items-center">
           {isUsuarioLogado && (
             <Link to="/mapa" className={`${isActive("/mapa")} transition-all duration-200`}>
               <FaMapMarkedAlt className="inline mr-1" /> Mapa
@@ -245,11 +268,71 @@ const Relatos = () => {
             </Link>
           )}
         </nav>
+
+        <button
+          aria-label={navOpen ? "Fechar menu" : "Abrir menu"}
+          onClick={() => setNavOpen((v) => !v)}
+          className="md:hidden text-zinc-100 focus:outline-none"
+        >
+          {navOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+        </button>
+
+        <div
+          className={`md:hidden absolute left-0 right-0 top-full bg-black/95 border-t border-zinc-800 ${
+            navOpen ? "block" : "hidden"
+          }`}
+        >
+          <ul className="flex flex-col gap-1 px-4 py-3 text-zinc-100">
+            {isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/mapa"
+                  onClick={() => setNavOpen(false)}
+                  className={`flex items-center gap-2 py-2 ${isActive("/mapa")}`}
+                >
+                  <FaMapMarkedAlt /> Mapa
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link
+                to="/relatos"
+                onClick={() => setNavOpen(false)}
+                className={`flex items-center gap-2 py-2 ${isActive("/relatos")}`}
+              >
+                <FaRegCommentDots /> Relatos
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/graficos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaChartBar /> Gráficos
+              </Link>
+            </li>
+            {!isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/login"
+                  onClick={() => setNavOpen(false)}
+                  className={`flex items-center gap-2 py-2 ${isActive("/login")}`}
+                >
+                  <FaUser /> Login
+                </Link>
+              </li>
+            )}
+          </ul>
+        </div>
       </header>
 
-      <main className="pt-28 pb-12 px-6 max-w-5xl mx-auto w-full flex-1">
+      <main className="pt-20 md:pt-28 pb-12 px-6 max-w-5xl mx-auto w-full flex-1">
         <div className="mb-5">
-          <button onClick={() => setShowForm(true)} className="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition duration-200 text-sm">
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition duration-200 text-sm"
+          >
             + Nova publicação
           </button>
         </div>
@@ -261,7 +344,7 @@ const Relatos = () => {
             <div className="px-5 py-3 text-base text-zinc-700">
               Ainda não há relatos publicados.
             </div>
-          ) : error ? ( 
+          ) : error ? (
             <div className="px-5 py-3 text-base text-red-700 bg-red-50 border-t border-red-200">
               {error}{" "}
               <button onClick={fetchRelatos} className="ml-2 underline text-red-800 hover:text-red-900">
@@ -277,7 +360,11 @@ const Relatos = () => {
                     <div className="flex items-center gap-3">
                       <time className="text-sm text-zinc-600">{getNiceDate(p.createdAt)}</time>
                       {isAdmin && (
-                        <button onClick={() => handleDelete(p.id)} className="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1" title="Excluir relato">
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          className="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1"
+                          title="Excluir relato"
+                        >
                           <FaTrash className="inline" /> Excluir
                         </button>
                       )}
@@ -285,7 +372,11 @@ const Relatos = () => {
                   </div>
 
                   {p.imageUrl && (
-                    <img src={toAbsoluteUrl(p.imageUrl)} alt="Imagem do relato" className="mt-4 w-full max-h-[300px] object-contain rounded bg-black" />
+                    <img
+                      src={toAbsoluteUrl(p.imageUrl)}
+                      alt="Imagem do relato"
+                      className="mt-4 w-full max-h-[300px] object-contain rounded bg-black"
+                    />
                   )}
                   <div className="mt-3 text-sm text-zinc-700">{renderLocalInfo(p)}</div>
                   {i !== posts.length - 1 && <hr className="mt-5 border-zinc-300" />}
@@ -296,18 +387,24 @@ const Relatos = () => {
         </section>
       </main>
 
-      <footer className="bg-black text-gray-400 text-sm py-6 border-t border-gray-700 px-6 mt-auto">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">
-          <div className="text-left">
-            <p className="font-semibold">© 2025 GREEN SIGHT</p>
-            <p>Todos os direitos reservados.</p>
-          </div>
-          <div className="text-center">
-            <p className="italic">Um projeto de TCC para um futuro mais sustentável.</p>
-          </div>
-          <div className="flex justify-center md:justify-end space-x-6">
-            <a href="#" className="hover:text-white">Privacidade</a>
-            <a href="#" className="hover:text-white">Termos de Uso</a>
+      <footer className="bg-black text-zinc-400 text-sm border-t border-zinc-700">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+          <div className="flex flex-col items-center gap-4 sm:gap-6 md:grid md:grid-cols-3 md:items-start">
+            <div className="order-2 md:order-1 text-center md:text-left">
+              <p className="font-semibold">© {year} GREEN SIGHT</p>
+              <p>Todos os direitos reservados.</p>
+            </div>
+
+            <div className="order-1 md:order-2 text-center italic text-zinc-300 px-4">
+              Um projeto de TCC para um futuro mais sustentável.
+            </div>
+
+            <div className="order-3 md:order-3 w-full">
+              <nav className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
+                <a href="#" className="hover:text-white inline-block py-1 px-2">Privacidade</a>
+                <a href="#" className="hover:text-white inline-block py-1 px-2">Termos de Uso</a>
+              </nav>
+            </div>
           </div>
         </div>
       </footer>

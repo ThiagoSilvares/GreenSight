@@ -1,26 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Link as ScrollLink, animateScroll as scroll } from 'react-scroll';
-import { FaUser, FaMapMarkedAlt, FaRegCommentDots, FaChartBar } from 'react-icons/fa';
+import {
+  FaUser,
+  FaMapMarkedAlt,
+  FaRegCommentDots,
+  FaChartBar,
+  FaBars,
+  FaTimes,
+} from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 import Enchente from '../assets/enchente.png';
 
 const Home = () => {
   const isUsuarioLogado = !!localStorage.getItem('usuarioLogado');
+  const [navOpen, setNavOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setNavOpen(false);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const year = new Date().getFullYear();
 
   return (
     <div className="bg-black text-white min-h-screen font-sans">
-
-      <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
-        <button onClick={() => scroll.scrollToTop()} className="focus:outline-none">
+      <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-4 md:px-8 py-3 flex justify-between items-center shadow-md">
+        <button onClick={() => { setNavOpen(false); scroll.scrollToTop(); }} className="focus:outline-none">
           <img
             src={LogoEscrita}
             alt="Logo Escrita Green Sight"
-            className="h-14 w-auto object-contain cursor-pointer"
+            className="h-10 md:h-14 w-auto object-contain cursor-pointer"
           />
         </button>
 
-        <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100">
+        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100">
           {isUsuarioLogado && (
             <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
               <FaMapMarkedAlt className="inline mr-1" /> Mapa
@@ -38,16 +53,73 @@ const Home = () => {
             </Link>
           )}
         </nav>
+
+        <button
+          aria-label={navOpen ? 'Fechar menu' : 'Abrir menu'}
+          onClick={() => setNavOpen(v => !v)}
+          className="md:hidden text-zinc-100 focus:outline-none"
+        >
+          {navOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+        </button>
+
+        <div
+          className={`md:hidden absolute left-0 right-0 top-full bg-black/95 border-t border-zinc-800 ${
+            navOpen ? 'block' : 'hidden'
+          }`}
+        >
+          <ul className="flex flex-col gap-1 px-4 py-3 text-zinc-100">
+            {isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/mapa"
+                  onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                >
+                  <FaMapMarkedAlt /> Mapa
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link
+                to="/relatos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaRegCommentDots /> Relatos
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/graficos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaChartBar /> Gráficos
+              </Link>
+            </li>
+            {!isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/login"
+                  onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                >
+                  <FaUser /> Login
+                </Link>
+              </li>
+            )}
+          </ul>
+        </div>
       </header>
 
-      <section className="text-center px-6 pt-32 pb-8 md:pt-40 md:pb-8 max-w-5xl mx-auto">
+      <section className="text-center px-6 pt-20 md:pt-40 pb-8 md:pb-8 max-w-5xl mx-auto">
         <h2 className="text-4xl md:text-6xl font-extrabold mb-6 leading-snug">
           Monitoramento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras.
         </h2>
         <p className="text-gray-300 max-w-3xl mx-auto mb-8 text-sm md:text-base">
-          O Green Sight utiliza tecnologia de câmeras e análise de dados para o mapeamento de bueiros em tempo real, 
-          possibilitando também o cadastro manual de cada uma das unidades monitoradas. A partir disso, constrói-se uma base geoespacial confiável, 
-          que apoia a prevenção de enchentes, o planejamento urbano e a gestão sustentável das cidades.
+          O Green Sight utiliza tecnologia de câmeras e análise de dados para o mapeamento de bueiros em tempo real,
+          possibilitando também o cadastro manual de cada uma das unidades monitoradas. A partir disso, constrói-se uma
+          base geoespacial confiável, que apoia a prevenção de enchentes, o planejamento urbano e a gestão sustentável das cidades.
         </p>
         <div className="my-8">
           <ScrollLink
@@ -66,13 +138,15 @@ const Home = () => {
         <div className="bg-white rounded-md shadow-md p-6 text-center">
           <h3 className="text-lg font-bold mb-2">Mapeamento Inteligente</h3>
           <p className="text-sm">
-            Localização precisa de bueiros ao longo das vias públicas, oferecendo uma visão clara e ampla da infraestrutura existente, e orientando de forma estratégica as ações de manutenção.
+            Localização precisa de bueiros ao longo das vias públicas, oferecendo uma visão clara e ampla da infraestrutura existente,
+            e orientando de forma estratégica as ações de manutenção.
           </p>
         </div>
         <div className="bg-white rounded-md shadow-md p-6 text-center">
           <h3 className="text-lg font-bold mb-2">Dados para Ação</h3>
           <p className="text-sm">
-            Disponibilização de mapas e dashboards com a finalidade de auxiliar gestores e equipes técnicas a atuarem com maior eficiência e planejamento estratégico.
+            Disponibilização de mapas e dashboards com a finalidade de auxiliar gestores e equipes técnicas a atuarem com maior
+            eficiência e planejamento estratégico.
           </p>
         </div>
         <div className="bg-white rounded-md shadow-md p-6 text-center">
@@ -163,18 +237,24 @@ const Home = () => {
         </form>
       </section>
 
-      <footer className="bg-black text-gray-400 text-sm py-6 border-t border-gray-700 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">
-          <div className="text-left">
-            <p className="font-semibold">© 2025 GREEN SIGHT</p>
-            <p>Todos os direitos reservados.</p>
-          </div>
-          <div className="text-center">
-            <p className="italic">Um projeto de TCC para um futuro mais sustentável.</p>
-          </div>
-          <div className="flex justify-center md:justify-end space-x-6">
-            <a href="#" className="hover:text-white">Privacidade</a>
-            <a href="#" className="hover:text-white">Termos de Uso</a>
+      <footer className="bg-black text-zinc-400 text-sm border-t border-zinc-700">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+          <div className="flex flex-col items-center gap-4 sm:gap-6 md:grid md:grid-cols-3 md:items-start">
+            <div className="order-2 md:order-1 text-center md:text-left">
+              <p className="font-semibold">© {year} GREEN SIGHT</p>
+              <p>Todos os direitos reservados.</p>
+            </div>
+
+            <div className="order-1 md:order-2 text-center italic text-zinc-300 px-4">
+              Um projeto de TCC para um futuro mais sustentável.
+            </div>
+
+            <div className="order-3 md:order-3 w-full">
+              <nav className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
+                <a href="#" className="hover:text-white inline-block py-1 px-2">Privacidade</a>
+                <a href="#" className="hover:text-white inline-block py-1 px-2">Termos de Uso</a>
+              </nav>
+            </div>
           </div>
         </div>
       </footer>

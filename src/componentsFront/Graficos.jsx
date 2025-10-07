@@ -6,12 +6,16 @@ import {
   PieChart, Pie, Cell, Legend
 } from "recharts";
 import {
+  FaBars,
+  FaTimes,
   FaMapMarkedAlt,
   FaRegCommentDots,
   FaChartBar,
   FaUser,
 } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
+
+const year = new Date().getFullYear();
 
 const API_BASE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
@@ -55,6 +59,8 @@ const Graficos = () => {
   const [zonasData, setZonasData] = useState(null);
   const [zonasErr, setZonasErr] = useState(null);
 
+  const [navOpen, setNavOpen] = useState(false);
+
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
 
   useEffect(() => {
@@ -91,6 +97,12 @@ const Graficos = () => {
         setZonasErr("Endpoint /bueiros/por-zona indisponível");
         setZonasData(null);
       });
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setNavOpen(false);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   function onlyDate(iso) {
@@ -176,16 +188,16 @@ const Graficos = () => {
 
   return (
     <div className="bg-black min-h-screen text-white font-sans">
-      <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center shadow-md">
+      <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-4 md:px-8 py-3 flex items-center justify-between shadow-md">
         <Link to="/" className="focus:outline-none">
           <img
             src={LogoEscrita}
             alt="Logo Escrita Green Sight"
-            className="h-14 w-auto object-contain cursor-pointer"
+            className="h-10 md:h-14 w-auto object-contain cursor-pointer"
           />
         </Link>
 
-        <nav className="space-x-8 text-sm md:text-base font-medium tracking-wide text-zinc-100">
+        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100">
           {isUsuarioLogado && (
             <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
               <FaMapMarkedAlt className="inline mr-1" /> Mapa
@@ -203,9 +215,66 @@ const Graficos = () => {
             </Link>
           )}
         </nav>
+
+        <button
+          aria-label={navOpen ? "Fechar menu" : "Abrir menu"}
+          onClick={() => setNavOpen((v) => !v)}
+          className="md:hidden text-zinc-100 focus:outline-none"
+        >
+          {navOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+        </button>
+
+        <div
+          className={`md:hidden absolute left-0 right-0 top-full bg-black/95 border-t border-zinc-800 ${
+            navOpen ? "block" : "hidden"
+          }`}
+        >
+          <ul className="flex flex-col gap-1 px-4 py-3 text-zinc-100">
+            {isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/mapa"
+                  onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                >
+                  <FaMapMarkedAlt /> Mapa
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link
+                to="/relatos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaRegCommentDots /> Relatos
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/graficos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaChartBar /> Gráficos
+              </Link>
+            </li>
+            {!isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/login"
+                  onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                >
+                  <FaUser /> Login
+                </Link>
+              </li>
+            )}
+          </ul>
+        </div>
       </header>
 
-      <main className="pt-24 px-10 pb-20 max-w-5xl mx-auto">
+      <main className="pt-20 md:pt-24 px-6 md:px-10 pb-20 max-w-5xl mx-auto">
         <h1 className="text-3xl md:text-5xl font-bold mb-10 text-center">
           Indicadores do Mapeamento de Bueiros
         </h1>
@@ -295,18 +364,24 @@ const Graficos = () => {
         </div>
       </main>
 
-      <footer className="bg-black text-gray-400 text-sm py-6 border-t border-gray-700 px-6 mt-auto">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">
-          <div className="text-left">
-            <p className="font-semibold">© 2025 GREEN SIGHT</p>
-            <p>Todos os direitos reservados.</p>
-          </div>
-          <div className="text-center">
-            <p className="italic">Um projeto de TCC para um futuro mais sustentável.</p>
-          </div>
-          <div className="flex justify-center md:justify-end space-x-6">
-            <a href="#" className="hover:text-white">Privacidade</a>
-            <a href="#" className="hover:text-white">Termos de Uso</a>
+      <footer className="bg-black text-zinc-400 text-sm border-t border-zinc-700">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+          <div className="flex flex-col items-center gap-4 sm:gap-6 md:grid md:grid-cols-3 md:items-start">
+            <div className="order-2 md:order-1 text-center md:text-left">
+              <p className="font-semibold">© {year} GREEN SIGHT</p>
+              <p>Todos os direitos reservados.</p>
+            </div>
+
+            <div className="order-1 md:order-2 text-center italic text-zinc-300 px-4">
+              Um projeto de TCC para um futuro mais sustentável.
+            </div>
+
+            <div className="order-3 md:order-3 w-full">
+              <nav className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
+                <a href="#" className="hover:text-white inline-block py-1 px-2">Privacidade</a>
+                <a href="#" className="hover:text-white inline-block py-1 px-2">Termos de Uso</a>
+              </nav>
+            </div>
           </div>
         </div>
       </footer>
