@@ -1,20 +1,20 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+  iconUrl: require("leaflet/dist/images/marker-icon.png"),
+  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
 const isNum = (v) => Number.isFinite(v);
-const toFloat = (v) => (v == null || v === '' ? NaN : parseFloat(v));
+const toFloat = (v) => (v == null ? NaN : parseFloat(v));
 
 const parseWKTPoint = (wkt) => {
-  if (typeof wkt !== 'string') return null;
+  if (typeof wkt !== "string") return null;
   const m = /POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i.exec(wkt);
   if (!m) return null;
   return { lon: parseFloat(m[1]), lat: parseFloat(m[2]) };
@@ -31,50 +31,33 @@ const rowToPoint = (row) => {
       lat = toFloat(coords[1]);
     }
   }
-
-  if ((!isNum(lat) || !isNum(lon)) && row?.localizacao && typeof row.localizacao === 'string') {
+  if ((!isNum(lat) || !isNum(lon)) && typeof row?.localizacao === "string") {
     const p = parseWKTPoint(row.localizacao);
     if (p) { lon = p.lon; lat = p.lat; }
   }
-
   if (!isNum(lat) || !isNum(lon)) return null;
-
-  const conf = toFloat(
-    row?.conf ??
-    row?.conf_last ??               
-    row?.confidence ??
-    row?.properties?.conf ??
-    row?.properties?.confidence
-  );
 
   return {
     id: row?.id,
     lat,
     lon,
     date: row?.data_monitoramento ?? row?.properties?.data_monitoramento ?? null,
-    conf: isNum(conf) ? conf : null,
+    conf: row?.conf ?? row?.properties?.conf ?? null,
+    image_url: row?.image_url ?? row?.properties?.image_url ?? null,
   };
 };
 
 const featureToPoint = (f) => {
   try {
-    const [lonRaw, latRaw] = f?.geometry?.coordinates ?? [];
-    const lat = toFloat(latRaw);
-    const lon = toFloat(lonRaw);
-    if (!isNum(lat) || !isNum(lon)) return null;
-
-    const conf = toFloat(
-      f?.properties?.conf ??
-      f?.properties?.conf_last ??
-      f?.properties?.confidence
-    );
-
+    const [lon, lat] = f?.geometry?.coordinates ?? [];
+    if (!isNum(parseFloat(lat)) || !isNum(parseFloat(lon))) return null;
     return {
       id: f?.id,
-      lat,
-      lon,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
       date: f?.properties?.data_monitoramento ?? null,
-      conf: isNum(conf) ? conf : null,
+      conf: f?.properties?.conf ?? null,
+      image_url: f?.properties?.image_url ?? null,
     };
   } catch {
     return null;
@@ -83,10 +66,10 @@ const featureToPoint = (f) => {
 
 const normalizeToPoints = (data) => {
   if (!data) return [];
-  if (data?.type === 'FeatureCollection' && Array.isArray(data.features)) {
+  if (data?.type === "FeatureCollection" && Array.isArray(data.features)) {
     return data.features.map(featureToPoint).filter(Boolean);
   }
-  if (data?.type === 'Feature') {
+  if (data?.type === "Feature") {
     const p = featureToPoint(data);
     return p ? [p] : [];
   }
@@ -96,20 +79,111 @@ const normalizeToPoints = (data) => {
   return [];
 };
 
-const MapComponent = ({
+const fmtConf = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toFixed(2) : "—";
+};
+
+function AutoFit({ pontos }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!pontos?.length) return;
+    const bounds = L.latLngBounds(pontos.map((p) => [p.lat, p.lon]));
+    map.fitBounds(bounds.pad(0.2), { animate: true });
+  }, [pontos, map]);
+  return null;
+}
+
+export default function MapComponent({
   bueiros,
-  markerColor = '#3b82f6',
+  markerColor = "#3b82f6",
   center = [-23.64601, -46.5759],
-  zoom = 17,
+  zoom = 15,
   height = 500,
-}) => {
-  const pontos = normalizeToPoints(bueiros);
+  autoRefreshMs = 5000,
+  apiBase = import.meta?.env?.VITE_API_BASE || "http://localhost:3001/api",
+}) {
+  const [pontos, setPontos] = useState([]);
+  const pollingRef = useRef(null);
+
+  const apiOrigin = useMemo(
+    () => apiBase.replace(/\/api\/?$/, ""),
+    [apiBase]
+  );
+
+  const divIcon = useMemo(
+    () =>
+      (color) =>
+        L.divIcon({
+          className: "custom-icon",
+          html: `<div style="
+              width:14px;height:14px;border-radius:50%;
+              background:${color};
+              border:1px solid white;box-shadow:0 0 8px rgba(0,0,0,0.6);
+            "></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        }),
+    []
+  );
+
+  const attachImgUrl = (pts) =>
+    pts.map((p) => {
+      let url = p.image_url;
+      if (!url && p.id) {
+        url = `/api/bueiros/${p.id}/imagem`;
+      }
+      if (!url) return p;
+
+      if (url.startsWith("http")) {
+        return { ...p, image_url: url };
+      }
+      if (url.startsWith("/")) {
+        return { ...p, image_url: `${apiOrigin}${url}` };
+      }
+      return { ...p, image_url: `${apiBase.replace(/\/$/, "")}/${url}` };
+    });
+
+  const loadFromApi = async () => {
+    try {
+      const r = await fetch(`${apiBase}/bueiros`);
+      if (!r.ok) throw new Error("GET /bueiros falhou");
+      const json = await r.json();
+      const data = Array.isArray(json) ? json : json?.bueiros ?? [];
+      const pts = attachImgUrl(normalizeToPoints(data));
+      setPontos(pts);
+    } catch (e) {
+      console.error("Erro carregando bueiros:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (bueiros) setPontos(attachImgUrl(normalizeToPoints(bueiros)));
+  }, [bueiros, apiOrigin, apiBase]);
+
+  useEffect(() => {
+    if (bueiros) return;
+    loadFromApi();
+    if (autoRefreshMs > 0) {
+      pollingRef.current = setInterval(loadFromApi, autoRefreshMs);
+    }
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [apiBase, autoRefreshMs, !!bueiros]);
+
+  useEffect(() => {
+    if (bueiros) return;
+    const handler = () => loadFromApi();
+    window.addEventListener("bueiro:created", handler);
+    return () => window.removeEventListener("bueiro:created", handler);
+  }, [apiBase, !!bueiros]);
 
   return (
     <MapContainer
       center={center}
       zoom={zoom}
-      style={{ height: `${height}px`, width: '100%' }}
+      style={{ height: `${height}px`, width: "100%" }}
       className="z-0 rounded-lg"
     >
       <TileLayer
@@ -117,36 +191,47 @@ const MapComponent = ({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
+      <AutoFit pontos={pontos} />
+
       {pontos.map((p, idx) => (
         <Marker
-          key={p.id ?? idx}
+          key={p.id ?? `${p.lat},${p.lon},${idx}`}
           position={[p.lat, p.lon]}
-          icon={L.divIcon({
-            className: 'custom-icon',
-            html: `<div style="
-              width:14px;
-              height:14px;
-              border-radius:50%;
-              background:${markerColor};
-              border:1px solid white;
-              box-shadow:0 0 8px rgba(0,0,0,0.6);
-            "></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],
-          })}
+          icon={divIcon(markerColor)}
         >
           <Popup>
-            <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+            <div style={{ fontSize: "14px", lineHeight: "1.6", maxWidth: 280 }}>
+              <br />
               {p.date && (
                 <>
-                  <strong>Data:</strong> {new Date(p.date).toLocaleDateString('pt-BR')}<br />
+                  <strong>Data:</strong>{" "}
+                  {new Date(p.date).toLocaleString("pt-BR")}
+                  <br />
                 </>
               )}
-              <strong>Latitude:</strong> {p.lat}<br />
-              <strong>Longitude:</strong> {p.lon}<br />
-              {p.conf != null && (
+              <strong>Latitude:</strong> {p.lat}
+              <br />
+              <strong>Longitude:</strong> {p.lon}
+              <br />
+              <strong>Conf:</strong> {fmtConf(p.conf)}
+              {p.image_url && (
                 <>
-                  <strong>Confiança:</strong> {Number(p.conf).toFixed(2)}
+                  <br />
+                  <img
+                    src={p.image_url}
+                    alt="Bueiro"
+                    style={{
+                      width: "100%",
+                      maxWidth: 260,
+                      height: "auto",
+                      marginTop: 8,
+                      borderRadius: 8,
+                      display: "block",
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
                 </>
               )}
             </div>
@@ -155,6 +240,4 @@ const MapComponent = ({
       ))}
     </MapContainer>
   );
-};
-
-export default MapComponent;
+}
