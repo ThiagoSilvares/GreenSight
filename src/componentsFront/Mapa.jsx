@@ -219,24 +219,23 @@ const Mapa = () => {
         </div>
 
         {sidebarAberta && (
-          <div
-            className="md:hidden fixed inset-0 bg-black/50 z-40"
-            onClick={() => setSidebarAberta(false)}
-          />
+          <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarAberta(false)} />
         )}
-
         <main className="flex-1 p-4 md:p-10">
-          <div className="md:hidden flex items-center gap-3 mb-2">
+          <div className="md:hidden grid grid-cols-[40px_1fr_40px] items-center mb-1">
             <button
               onClick={() => setSidebarAberta(true)}
-              className="text-green-400 p-2 rounded-md"
+              className="justify-self-start text-green-400 p-2 rounded-md"
               aria-label="Abrir menu lateral"
             >
               <FaBars size={20} />
             </button>
-            <h1 className="text-3xl font-bold leading-tight">Central de Monitoramento</h1>
+            <h1 className="text-3xl font-bold leading-tight text-center col-start-2">
+              Central de Monitoramento
+            </h1>
+            <span />
           </div>
-          <div className="md:hidden mb-6">
+          <div className="md:hidden mb-6 flex justify-start pl-2">
             <span className="border px-3 py-1 rounded-md text-xs">Administrador</span>
           </div>
 

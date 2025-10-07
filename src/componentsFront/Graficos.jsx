@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell, Legend
+  BarChart, Bar, Cell, Legend
 } from "recharts";
 import {
   FaBars,
@@ -336,28 +336,21 @@ const Graficos = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={{ bottom: 40 }}>
-                  <Pie
-                    data={zonasChart}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    label={({ name, percent }) =>
-                      Number.isFinite(percent) ? `${name}: ${(percent * 100).toFixed(0)}%` : ""
-                    }
-                    isAnimationActive={false}
-                  >
+                <BarChart
+                  data={zonasChart}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 40 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip formatter={(v) => `${v} bueiro(s)`} />
+                  <Legend verticalAlign="bottom" align="center" content={<LegendZonas />} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     {zonasChart.map((item) => (
                       <Cell key={item.key} fill={item.color} />
                     ))}
-                  </Pie>
-
-                  <Tooltip formatter={(v) => `${v} bueiro(s)`} />
-
-                  <Legend verticalAlign="bottom" align="center" content={<LegendZonas />} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </div>
