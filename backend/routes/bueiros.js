@@ -13,17 +13,20 @@ const upload = multer({ storage });
 const CITY_NAME = process.env.CITY_NAME || 'São Caetano do Sul';
 const RADIUS_M = Number(process.env.BUEIRO_RADIUS_M || 8);
 
-const IMG_DIR = process.env.BUEIROS_IMG_DIR || path.resolve(__dirname, '../uploads/bueiros');
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
+
+const IMG_DIR =
+  process.env.BUEIROS_IMG_DIR || path.resolve(__dirname, '../uploads/bueiros');
 fs.mkdirSync(IMG_DIR, { recursive: true });
 
 const EXT_BY_MIME = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
   'image/png': 'png',
-  'image/webp': 'webp',
+  'image/webp': 'webp'
 };
 
-const imageUrl = (id) => `/api/bueiros/${id}/imagem`;
+const imageUrl = (id) => `${PUBLIC_BASE_URL}/api/bueiros/${id}/imagem`;
 
 router.get('/bueiros', async (_req, res) => {
   try {
@@ -281,7 +284,7 @@ router.post('/bueiros/upload-imagem', upload.single('imagem'), async (req, res) 
       return res.status(400).json({ erro: 'Arquivo é obrigatório (campo "imagem").' });
     }
 
-    const base = path.parse(req.file.originalname).name.trim(); 
+    const base = path.parse(req.file.originalname).name.trim();
 
     const r = await pool.query(
       `
@@ -319,7 +322,9 @@ router.post('/bueiros/upload-imagem', upload.single('imagem'), async (req, res) 
       [bueiroId, String(bueiroId), req.file.mimetype, req.file.size]
     );
 
-    return res.status(201).json({ sucesso: true, bueiro_id: bueiroId, filename_base: String(bueiroId), url: imageUrl(bueiroId) });
+    return res
+      .status(201)
+      .json({ sucesso: true, bueiro_id: bueiroId, filename_base: String(bueiroId), url: imageUrl(bueiroId) });
   } catch (err) {
     console.error('❌ Erro no upload-imagem:', err.message);
     return res.status(500).json({ erro: 'Falha no upload da imagem.', detalhe: err.message });
@@ -341,6 +346,7 @@ router.get('/bueiros/:id/imagem', async (req, res) => {
       for (const ext of [...tryExt, 'jpg', 'jpeg', 'png', 'webp']) {
         const filePath = path.join(IMG_DIR, `${idText}.${ext}`);
         if (fs.existsSync(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           res.type(mime);
           return fs.createReadStream(filePath).pipe(res);
         }
@@ -349,6 +355,7 @@ router.get('/bueiros/:id/imagem', async (req, res) => {
 
     const b = await pool.query(`SELECT imagem FROM public.bueiros WHERE id::text = $1`, [idText]);
     if (b.rows.length && b.rows[0].imagem) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       res.type('image/jpeg');
       return res.end(b.rows[0].imagem, 'binary');
     }
@@ -356,6 +363,7 @@ router.get('/bueiros/:id/imagem', async (req, res) => {
     for (const ext of ['jpg', 'jpeg', 'png', 'webp']) {
       const filePath = path.join(IMG_DIR, `${idText}.${ext}`);
       if (fs.existsSync(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         res.type(ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
         return fs.createReadStream(filePath).pipe(res);
       }
