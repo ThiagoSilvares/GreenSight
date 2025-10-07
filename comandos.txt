@@ -25,3 +25,10 @@ node ingest-jsonl.mjs "../detections_jetson-nano-01_2025-10-04T15.jsonl"
 
 cd "C:\Users\thiag\OneDrive\Área de Trabalho\GreenSightTCC\backend"
 node upload-bueiro-imagens.mjs "./thumbs_teste_rota"
+
+- arquivo jsonl pt 2: 
+cd "C:\Users\thiag\OneDrive\Área de Trabalho\GreenSightTCC\backend"
+node ingest-jsonl.mjs "../detections_jetson-nano-01_2025-10-04T16pt2.jsonl"
+
+cd "C:\Users\thiag\OneDrive\Área de Trabalho\GreenSightTCC\backend"
+node upload-bueiro-imagens.mjs "./thumbs_teste_rotapt2"
