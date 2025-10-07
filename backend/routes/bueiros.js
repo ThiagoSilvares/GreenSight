@@ -40,7 +40,7 @@ router.get('/bueiros', async (_req, res) => {
         conf
       FROM public.bueiros
       WHERE localizacao IS NOT NULL
-      ORDER BY data_monitoramento DESC, id DESC;
+      ORDER BY COALESCE(ts_utc, data_monitoramento) DESC, id DESC;
       `
     );
     const rows = result.rows.map((r) => ({ ...r, image_url: imageUrl(r.id) }));
@@ -48,6 +48,25 @@ router.get('/bueiros', async (_req, res) => {
   } catch (err) {
     console.error('❌ Erro ao listar bueiros:', err.message);
     return res.status(500).json([]);
+  }
+});
+
+router.get('/resumo', async (_req, res) => {
+  try {
+    const q = await pool.query(`
+      SELECT
+        COUNT(*)::int AS total_mapeados,
+        COUNT(*) FILTER (
+          WHERE COALESCE(ts_utc, data_monitoramento) >= NOW() - INTERVAL '30 days'
+        )::int AS novos_30d
+      FROM public.bueiros
+      WHERE localizacao IS NOT NULL;
+    `);
+
+    return res.json(q.rows[0] ?? { total_mapeados: 0, novos_30d: 0 });
+  } catch (err) {
+    console.error('❌ Erro em /resumo:', err);
+    return res.status(500).json({ total_mapeados: 0, novos_30d: 0 });
   }
 });
 
@@ -65,99 +84,84 @@ router.get('/bueiros/por-zona', async (req, res) => {
         EXISTS (
           SELECT 1 FROM information_schema.columns
           WHERE table_schema='public' AND table_name='municipios' AND column_name='geom'
-        ) AS has_municipios;
+        ) AS has_municipios,
+        EXISTS (
+          SELECT 1 FROM pg_extension WHERE extname='unaccent'
+        ) AS has_unaccent;
     `);
 
-    const hasZonas = !!meta.rows[0]?.has_zonas;
-    const hasMunicipios = !!meta.rows[0]?.has_municipios;
-
-    let hasCidade = false;
-    if (hasMunicipios) {
-      const rCidade = await pool.query(
-        `SELECT EXISTS(SELECT 1 FROM public.municipios WHERE nome ILIKE $1) AS ok`,
-        [CITY_NAME]
-      );
-      hasCidade = !!rCidade.rows[0]?.ok;
-    }
-
-    if (hasZonas && hasCidade) {
-      const r = await pool.query(
-        `
-        WITH cidade AS (
-          SELECT geom, ST_SRID(geom) AS srid
-          FROM public.municipios
-          WHERE nome ILIKE $1
-          LIMIT 1
-        ),
-        b_in AS (  -- bueiros dentro do município
-          SELECT b.id, b.localizacao
-          FROM public.bueiros b, cidade c
-          WHERE ST_Within(ST_Transform(b.localizacao, c.srid), c.geom)
-        ),
-        contagem AS (
-          SELECT z.nome AS zona, COUNT(b.id)::int AS total
-          FROM public.zonas z
-          LEFT JOIN b_in b
-            ON ST_Within(
-                 ST_Transform(b.localizacao, ST_SRID(z.geom)),
-                 z.geom
-               )
-          GROUP BY z.nome
-        ),
-        sem_zona AS (
-          SELECT 'Sem Zona'::text AS zona, COUNT(*)::int AS total
-          FROM b_in b
-          WHERE NOT EXISTS (
-            SELECT 1
-            FROM public.zonas z
-            WHERE ST_Within(
-                    ST_Transform(b.localizacao, ST_SRID(z.geom)),
-                    z.geom
-                  )
-          )
-        )
-        SELECT * FROM contagem
-        UNION ALL
-        SELECT * FROM sem_zona
-        ORDER BY zona;
-        `,
-        [CITY_NAME]
-      );
-      return res.json(r.rows);
-    }
+    const hasZonas       = !!meta.rows[0]?.has_zonas;
+    const hasMunicipios  = !!meta.rows[0]?.has_municipios;
+    const hasUnaccent    = !!meta.rows[0]?.has_unaccent;
 
     if (hasZonas) {
-      const r = await pool.query(
-        `
-        WITH b_all AS (SELECT id, localizacao FROM public.bueiros),
-        contagem AS (
-          SELECT z.nome AS zona, COUNT(b.id)::int AS total
+      const whereCity = hasMunicipios
+        ? (hasUnaccent
+            ? `unaccent(m.nome) ILIKE unaccent($1)`
+            : `m.nome ILIKE $1`)
+        : null;
+
+      const sql = `
+        WITH city AS (
+          ${hasMunicipios ? `
+            SELECT
+              CASE
+                WHEN ST_SRID(m.geom)=0 THEN ST_SetSRID(m.geom,4326)
+                WHEN ST_SRID(m.geom)<>4326 THEN ST_Transform(m.geom,4326)
+                ELSE m.geom
+              END AS geom
+            FROM public.municipios m
+            WHERE ${whereCity}
+            LIMIT 1
+          ` : `SELECT NULL::geometry(MultiPolygon,4326) AS geom WHERE FALSE`}
+        ),
+        bueiros_norm AS (
+          SELECT b.id,
+                 CASE
+                   WHEN ST_SRID(b.localizacao)=0 THEN ST_SetSRID(b.localizacao,4326)
+                   WHEN ST_SRID(b.localizacao)<>4326 THEN ST_Transform(b.localizacao,4326)
+                   ELSE b.localizacao
+                 END AS geom
+          FROM public.bueiros b
+          WHERE b.localizacao IS NOT NULL
+        ),
+        b_in_city AS (
+          SELECT bn.*
+          FROM bueiros_norm bn
+          WHERE NOT EXISTS (SELECT 1 FROM city)
+                OR EXISTS (SELECT 1 FROM city c WHERE ST_Covers(c.geom, bn.geom))
+        ),
+        zonas_norm AS (
+          SELECT z.nome,
+                 CASE
+                   WHEN ST_SRID(z.geom)=0 THEN ST_SetSRID(z.geom,4326)
+                   WHEN ST_SRID(z.geom)<>4326 THEN ST_Transform(z.geom,4326)
+                   ELSE z.geom
+                 END AS geom
           FROM public.zonas z
-          LEFT JOIN b_all b
-            ON ST_Within(
-                 ST_Transform(b.localizacao, ST_SRID(z.geom)),
-                 z.geom
-               )
-          GROUP BY z.nome
+        ),
+        contagem AS (
+          SELECT zn.nome AS zona, COUNT(bc.id)::int AS total
+          FROM zonas_norm zn
+          LEFT JOIN b_in_city bc
+            ON ST_Covers(zn.geom, bc.geom) 
+          GROUP BY zn.nome
         ),
         sem_zona AS (
           SELECT 'Sem Zona'::text AS zona, COUNT(*)::int AS total
-          FROM b_all b
+          FROM b_in_city bc
           WHERE NOT EXISTS (
-            SELECT 1
-            FROM public.zonas z
-            WHERE ST_Within(
-                    ST_Transform(b.localizacao, ST_SRID(z.geom)),
-                    z.geom
-                  )
+            SELECT 1 FROM zonas_norm zn WHERE ST_Covers(zn.geom, bc.geom)
           )
         )
         SELECT * FROM contagem
         UNION ALL
         SELECT * FROM sem_zona
         ORDER BY zona;
-        `
-      );
+      `;
+
+      const params = hasMunicipios ? [CITY_NAME] : [];
+      const r = await pool.query(sql, params);
       return res.json(r.rows);
     }
 
@@ -172,6 +176,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
         END AS zona,
         COUNT(*)::int AS total
       FROM public.bueiros
+      WHERE localizacao IS NOT NULL
       GROUP BY zona
       ORDER BY zona;
       `,
