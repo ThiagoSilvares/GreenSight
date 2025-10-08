@@ -9,6 +9,8 @@ import {
   FaBars,
   FaTimes,
   FaUser,
+  FaPlus,
+  FaSignOutAlt,
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 
@@ -26,6 +28,7 @@ const CadastroBueiros = () => {
   const isUsuarioLogado = !!localStorage.getItem('usuarioLogado');
 
   const [navOpen, setNavOpen] = useState(false);
+  const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
 
   const [formData, setFormData] = useState({
     latitude: '',
@@ -111,6 +114,12 @@ const CadastroBueiros = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('usuarioLogado');
+    localStorage.removeItem('usuario');
+    navigate('/');
+  };
+
   return (
     <div className="bg-black min-h-screen text-white font-sans">
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-4 md:px-8 py-3 flex justify-between items-center shadow-md">
@@ -119,9 +128,11 @@ const CadastroBueiros = () => {
         </Link>
 
         <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100 items-center">
-          <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
-            <FaMapMarkedAlt className="inline mr-1" /> Mapa
-          </Link>
+          {isUsuarioLogado && (
+            <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
+              <FaMapMarkedAlt className="inline mr-1" /> Mapa
+            </Link>
+          )}
           <Link to="/relatos" className="hover:text-green-500 transition-all duration-200">
             <FaRegCommentDots className="inline mr-1" /> Relatos
           </Link>
@@ -144,27 +155,76 @@ const CadastroBueiros = () => {
         </button>
 
         <div
-          className={`md:hidden absolute left-0 right-0 top-full bg-black/95 border-t border-zinc-800 ${navOpen ? 'block' : 'hidden'}`}
+          className={`md:hidden absolute left-0 right-0 top-full bg-black/95 border-t border-zinc-800 ${
+            navOpen ? 'block' : 'hidden'
+          }`}
         >
           <ul className="flex flex-col gap-1 px-4 py-3 text-zinc-100">
+            {isUsuarioLogado && (
+              <li>
+                <Link
+                  to="/mapa"
+                  onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                >
+                  <FaMapMarkedAlt /> Mapa
+                </Link>
+              </li>
+            )}
             <li>
-              <Link to="/mapa" onClick={() => setNavOpen(false)} className="flex items-center gap-2 py-2 hover:text-green-500">
-                <FaMapMarkedAlt /> Mapa
-              </Link>
-            </li>
-            <li>
-              <Link to="/relatos" onClick={() => setNavOpen(false)} className="flex items-center gap-2 py-2 hover:text-green-500">
+              <Link
+                to="/relatos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
                 <FaRegCommentDots /> Relatos
               </Link>
             </li>
             <li>
-              <Link to="/graficos" onClick={() => setNavOpen(false)} className="flex items-center gap-2 py-2 hover:text-green-500">
+              <Link
+                to="/graficos"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
+              >
                 <FaChartBar /> Gráficos
               </Link>
             </li>
+
+            {isUsuarioLogado && (
+              <>
+                <li className="mt-2 border-t border-zinc-800" />
+                <li>
+                  <button
+                    onClick={() => {
+                      setNavOpen(false);
+                      navigate('/cadastro-bueiros');
+                    }}
+                    className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+                  >
+                    <FaPlus /> Cadastro de Bueiros
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setNavOpen(false);
+                      setMostrarConfirmacaoLogout(true);
+                    }}
+                    className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+                  >
+                    <FaSignOutAlt /> Sair
+                  </button>
+                </li>
+              </>
+            )}
+
             {!isUsuarioLogado && (
               <li>
-                <Link to="/login" onClick={() => setNavOpen(false)} className="flex items-center gap-2 py-2 hover:text-green-500">
+                <Link
+                  to="/login"
+                  onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                >
                   <FaUser /> Login
                 </Link>
               </li>
@@ -173,10 +233,35 @@ const CadastroBueiros = () => {
         </div>
       </header>
 
+      {mostrarConfirmacaoLogout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-zinc-900 p-6 rounded-lg shadow-lg text-center">
+            <p className="text-white text-lg mb-4">Deseja realmente encerrar sua sessão?</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMostrarConfirmacaoLogout(false);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              >
+                Sim
+              </button>
+              <button
+                onClick={() => setMostrarConfirmacaoLogout(false)}
+                className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded"
+              >
+                Não
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="pt-20 md:pt-28 px-6 md:px-8 max-w-3xl mx-auto w-full">
         <div className="mb-6">
           <button
-            onClick={() => navigate('/mapa')}
+            onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 text-sm md:text-base text-white border-b border-white/70 hover:text-green-400 hover:border-green-500 transition-colors"
           >
             <FaArrowLeft /> Voltar

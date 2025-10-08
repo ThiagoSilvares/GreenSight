@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -12,6 +12,8 @@ import {
   FaRegCommentDots,
   FaChartBar,
   FaUser,
+  FaPlus,
+  FaSignOutAlt,
 } from "react-icons/fa";
 import LogoEscrita from "../assets/LogoEscritaGreenSight.png";
 
@@ -53,6 +55,8 @@ function LegendZonas() {
 }
 
 const Graficos = () => {
+  const navigate = useNavigate();
+
   const [resumo, setResumo] = useState(null);
   const [bueiros, setBueiros] = useState([]);
   const [serieAPI, setSerieAPI] = useState(null);
@@ -60,6 +64,7 @@ const Graficos = () => {
   const [zonasErr, setZonasErr] = useState(null);
 
   const [navOpen, setNavOpen] = useState(false);
+  const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
 
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
 
@@ -186,6 +191,12 @@ const Graficos = () => {
     [zonasAll]
   );
 
+  const handleLogout = () => {
+    localStorage.removeItem("usuarioLogado");
+    localStorage.removeItem("usuario");
+    navigate("/");
+  };
+
   return (
     <div className="bg-black min-h-screen text-white font-sans">
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-4 md:px-8 py-3 flex items-center justify-between shadow-md">
@@ -259,6 +270,35 @@ const Graficos = () => {
                 <FaChartBar /> Gráficos
               </Link>
             </li>
+
+            {isUsuarioLogado && (
+              <>
+                <li className="mt-2 border-t border-zinc-800" />
+                <li>
+                  <button
+                    onClick={() => {
+                      setNavOpen(false);
+                      navigate("/cadastro-bueiros");
+                    }}
+                    className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+                  >
+                    <FaPlus /> Cadastro de Bueiros
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setNavOpen(false);
+                      setMostrarConfirmacaoLogout(true);
+                    }}
+                    className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+                  >
+                    <FaSignOutAlt /> Sair
+                  </button>
+                </li>
+              </>
+            )}
+
             {!isUsuarioLogado && (
               <li>
                 <Link
@@ -356,6 +396,31 @@ const Graficos = () => {
           </div>
         </div>
       </main>
+
+      {mostrarConfirmacaoLogout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-zinc-900 p-6 rounded-lg shadow-lg text-center">
+            <p className="text-white text-lg mb-4">Deseja realmente encerrar sua sessão?</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMostrarConfirmacaoLogout(false);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              >
+                Sim
+              </button>
+              <button
+                onClick={() => setMostrarConfirmacaoLogout(false)}
+                className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded"
+              >
+                Não
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="bg-black text-zinc-400 text-sm border-t border-zinc-700">
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">

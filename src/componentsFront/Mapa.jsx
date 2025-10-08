@@ -27,7 +27,7 @@ const API_BASE =
 const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
 
 const Mapa = () => {
-  const [sidebarAberta, setSidebarAberta] = useState(false);
+  const [sidebarAberta, setSidebarAberta] = useState(false); // só desktop
   const [dadosResumo, setDadosResumo] = useState(null);
   const [bueirosMapa, setBueirosMapa] = useState([]);
   const [zonas, setZonas] = useState({ norte: 0, sul: 0, leste: 0, oeste: 0 });
@@ -36,10 +36,10 @@ const Mapa = () => {
 
   const [latInput, setLatInput] = useState('');
   const [lonInput, setLonInput] = useState('');
-  const pontosRef = useRef([]); 
-  const [flyTo, setFlyTo] = useState(null); 
+  const pontosRef = useRef([]);
+  const [flyTo, setFlyTo] = useState(null);
   const [highlightedId, setHighlightedId] = useState(null);
-  const [toast, setToast] = useState(null); 
+  const [toast, setToast] = useState(null);
 
   const navigate = useNavigate();
 
@@ -230,6 +230,31 @@ const Mapa = () => {
                 <FaChartBar /> Gráficos
               </Link>
             </li>
+
+            <li className="mt-2 border-t border-zinc-800" />
+
+            <li>
+              <button
+                onClick={() => {
+                  setNavOpen(false);
+                  navigate('/cadastro-bueiros');
+                }}
+                className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaPlus /> Cadastro de Bueiros
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => {
+                  setNavOpen(false);
+                  setMostrarConfirmacaoLogout(true);
+                }}
+                className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+              >
+                <FaSignOutAlt /> Sair
+              </button>
+            </li>
           </ul>
         </div>
       </header>
@@ -257,59 +282,15 @@ const Mapa = () => {
           )}
         </div>
 
-        <div
-          className={`md:hidden fixed inset-y-0 left-0 w-64 bg-black p-4 z-50 transform transition-transform duration-300 ${
-            sidebarAberta ? 'translate-x-0' : '-translate-x-full'
-          }`}
-          role="dialog"
-          aria-label="Menu lateral"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={() => setSidebarAberta(false)} className="text-green-400" aria-label="Fechar menu lateral">
-              <FaTimes size={24} />
-            </button>
-          </div>
-          <ul className="space-y-6 text-lg">
-            <li
-              onClick={() => {
-                setSidebarAberta(false);
-                navigate('/cadastro-bueiros');
-              }}
-              className="hover:text-green-400 cursor-pointer flex items-center gap-3"
-            >
-              <FaPlus size={20} /> Cadastro de Bueiros
-            </li>
-            <li
-              onClick={() => {
-                setSidebarAberta(false);
-                setMostrarConfirmacaoLogout(true);
-              }}
-              className="hover:text-green-400 cursor-pointer flex items-center gap-3"
-            >
-              <FaSignOutAlt size={20} /> Sair
-            </li>
-          </ul>
-        </div>
 
-        {sidebarAberta && (
-          <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarAberta(false)} />
-        )}
         <main className="flex-1 p-4 md:p-10">
-          <div className="md:hidden grid grid-cols-[40px_1fr_40px] items-center mb-1">
-            <button
-              onClick={() => setSidebarAberta(true)}
-              className="justify-self-start text-green-400 p-2 rounded-md"
-              aria-label="Abrir menu lateral"
-            >
-              <FaBars size={20} />
-            </button>
-            <h1 className="text-3xl font-bold leading-tight text-center col-start-2">
+          <div className="md:hidden mb-6">
+            <h1 className="text-3xl font-bold leading-tight text-center">
               Central de Monitoramento
             </h1>
-            <span />
-          </div>
-          <div className="md:hidden mt-2 mb-6 flex justify-center">
-            <span className="border px-3 py-1 rounded-md text-xs">Administrador</span>
+            <div className="mt-2 flex justify-center">
+              <span className="border px-3 py-1 rounded-md text-xs">Administrador</span>
+            </div>
           </div>
 
           <div className="hidden md:flex items-center justify-between mb-6 md:mb-8">
@@ -317,10 +298,7 @@ const Mapa = () => {
             <span className="border px-3 py-1 rounded-md text-sm">Administrador</span>
           </div>
 
-          <form
-            onSubmit={handleBuscar}
-            className="mb-3"
-          >
+          <form onSubmit={handleBuscar} className="mb-3">
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl px-3 py-3 md:px-4 md:py-3">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-2">
                 <div className="w-full md:w-auto">
@@ -401,6 +379,7 @@ const Mapa = () => {
               Bueiros Cadastrados
             </div>
           </div>
+
           <div className="mt-8 grid grid-cols-2 max-[380px]:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {cards.map(([titulo, valor], index) => (
               <div
