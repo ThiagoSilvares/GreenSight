@@ -94,14 +94,28 @@ function AutoFit({ pontos }) {
   return null;
 }
 
+function FlyToControl({ flyTo }) {
+  const map = useMap();
+  useEffect(() => {
+    if (flyTo && Number.isFinite(flyTo.lat) && Number.isFinite(flyTo.lon)) {
+      map.flyTo([flyTo.lat, flyTo.lon], flyTo.zoom ?? 18, { animate: true, duration: 0.8 });
+    }
+  }, [flyTo, map]);
+  return null;
+}
+
 export default function MapComponent({
   bueiros,
   markerColor = "#3b82f6",
+  highlightColor = "#22c55e",
+  highlightedId = null,
+  flyTo = null,
   center = [-23.64601, -46.5759],
   zoom = 15,
   height = 500,
   autoRefreshMs = 5000,
   apiBase = import.meta?.env?.VITE_API_BASE || "http://localhost:3001/api",
+  onPointsLoaded = () => {},
 }) {
   const [pontos, setPontos] = useState([]);
   const pollingRef = useRef(null);
@@ -152,14 +166,19 @@ export default function MapComponent({
       const data = Array.isArray(json) ? json : json?.bueiros ?? [];
       const pts = attachImgUrl(normalizeToPoints(data));
       setPontos(pts);
+      onPointsLoaded(pts);
     } catch (e) {
       console.error("Erro carregando bueiros:", e);
     }
   };
 
   useEffect(() => {
-    if (bueiros) setPontos(attachImgUrl(normalizeToPoints(bueiros)));
-  }, [bueiros, apiOrigin, apiBase]);
+    if (bueiros) {
+      const pts = attachImgUrl(normalizeToPoints(bueiros));
+      setPontos(pts);
+      onPointsLoaded(pts);
+    }
+  }, [bueiros, apiOrigin, apiBase]); //eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (bueiros) return;
@@ -170,14 +189,14 @@ export default function MapComponent({
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [apiBase, autoRefreshMs, !!bueiros]);
+  }, [apiBase, autoRefreshMs, !!bueiros]); //eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (bueiros) return;
     const handler = () => loadFromApi();
     window.addEventListener("bueiro:created", handler);
     return () => window.removeEventListener("bueiro:created", handler);
-  }, [apiBase, !!bueiros]);
+  }, [apiBase, !!bueiros]); //eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <MapContainer
@@ -192,12 +211,13 @@ export default function MapComponent({
       />
 
       <AutoFit pontos={pontos} />
+      <FlyToControl flyTo={flyTo} />
 
       {pontos.map((p, idx) => (
         <Marker
           key={p.id ?? `${p.lat},${p.lon},${idx}`}
           position={[p.lat, p.lon]}
-          icon={divIcon(markerColor)}
+          icon={divIcon((highlightedId && (highlightedId === p.id || highlightedId === `${p.lat},${p.lon}`)) ? highlightColor : markerColor)}
         >
           <Popup>
             <div style={{ fontSize: "14px", lineHeight: "1.6", maxWidth: 280 }}>

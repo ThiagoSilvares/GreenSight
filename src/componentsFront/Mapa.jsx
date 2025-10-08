@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FaBars,
@@ -7,7 +7,9 @@ import {
   FaRegCommentDots,
   FaSignOutAlt,
   FaPlus,
-  FaChartBar
+  FaChartBar,
+  FaSearch,
+  FaBroom
 } from 'react-icons/fa';
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 import MapComponent from './MapComponent';
@@ -31,6 +33,14 @@ const Mapa = () => {
   const [zonas, setZonas] = useState({ norte: 0, sul: 0, leste: 0, oeste: 0 });
   const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+
+  const [latInput, setLatInput] = useState('');
+  const [lonInput, setLonInput] = useState('');
+  const pontosRef = useRef([]); 
+  const [flyTo, setFlyTo] = useState(null); 
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [toast, setToast] = useState(null); 
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,6 +102,69 @@ const Mapa = () => {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const distMeters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  const showToast = (text, type = 'warn', ms = null) => {
+    setToast({ text, type });
+    if (typeof ms === 'number') {
+      setTimeout(() => setToast(null), ms);
+    }
+  };
+
+  const handleBuscar = (e) => {
+    e?.preventDefault?.();
+    const lat = parseFloat(latInput);
+    const lon = parseFloat(lonInput);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      showToast('Informe latitude e longitude válidas.', 'warn', 2200);
+      return;
+    }
+
+    const pts = pontosRef.current || [];
+    if (!pts.length) {
+      showToast('Mapa ainda carregando. Tente novamente.', 'warn', 2200);
+      return;
+    }
+
+    let best = null;
+    let bestD = Infinity;
+    for (const p of pts) {
+      const d = distMeters(lat, lon, p.lat, p.lon);
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+
+    const LIMITAR_METROS = 5;
+    if (best && bestD <= LIMITAR_METROS) {
+      setHighlightedId(best.id ?? `${best.lat},${best.lon}`);
+      setFlyTo({ lat: best.lat, lon: best.lon, zoom: 18 });
+      setToast(null);
+    } else {
+      setHighlightedId(null);
+      setFlyTo(null);
+      showToast('Bueiro não encontrado nesta localização', 'warn', null);
+    }
+  };
+
+  const handleLimpar = () => {
+    setLatInput('');
+    setLonInput('');
+    setHighlightedId(null);
+    setToast(null);
+    setFlyTo({ lat: MAP_CENTER[0], lon: MAP_CENTER[1], zoom: 13.5 });
+  };
 
   return (
     <div className="bg-black min-h-screen text-white font-sans">
@@ -239,13 +312,87 @@ const Mapa = () => {
             <span className="border px-3 py-1 rounded-md text-xs">Administrador</span>
           </div>
 
-          <div className="hidden md:flex items-center justify-between mb-12">
+          <div className="hidden md:flex items-center justify-between mb-6 md:mb-8">
             <h1 className="text-5xl font-bold leading-tight">Central de Monitoramento</h1>
             <span className="border px-3 py-1 rounded-md text-sm">Administrador</span>
           </div>
 
+          <form
+            onSubmit={handleBuscar}
+            className="mb-3"
+          >
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl px-3 py-3 md:px-4 md:py-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-2">
+                <div className="w-full md:w-auto">
+                  <div className="flex items-center bg-black/60 border border-zinc-700 rounded-xl px-3 h-10 text-sm focus-within:border-green-500 transition-colors">
+                    <span className="mr-2 text-zinc-400 select-none">Lat</span>
+                    <input
+                      aria-label="Latitude"
+                      value={latInput}
+                      onChange={(e) => setLatInput(e.target.value)}
+                      inputMode="decimal"
+                      placeholder="-23.55"
+                      className="bg-transparent outline-none w-full md:w-44"
+                    />
+                  </div>
+                </div>
+
+                <div className="hidden md:block text-zinc-700">•</div>
+
+                <div className="w-full md:w-auto">
+                  <div className="flex items-center bg-black/60 border border-zinc-700 rounded-xl px-3 h-10 text-sm focus-within:border-green-500 transition-colors">
+                    <span className="mr-2 text-zinc-400 select-none">Lon</span>
+                    <input
+                      aria-label="Longitude"
+                      value={lonInput}
+                      onChange={(e) => setLonInput(e.target.value)}
+                      inputMode="decimal"
+                      placeholder="-46.63"
+                      className="bg-transparent outline-none w-full md:w-44"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-1" />
+
+                <div className="flex gap-2 justify-start md:justify-end">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 font-semibold text-sm transition-colors"
+                  >
+                    <FaSearch />
+                    Buscar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLimpar}
+                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 font-semibold text-sm transition-colors"
+                  >
+                    <FaBroom />
+                    Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          {toast?.text && (
+            <div className="mb-4 text-sm text-red-400">
+              {toast.text}
+            </div>
+          )}
+
           <div className="bg-zinc-800 rounded-lg overflow-hidden relative z-0">
-            <MapComponent bueiros={bueirosMapa} markerColor="#3b82f6" />
+            <MapComponent
+              bueiros={bueirosMapa}
+              markerColor="#3b82f6"
+              highlightColor="#22c55e"
+              highlightedId={highlightedId}
+              flyTo={flyTo}
+              onPointsLoaded={(pts) => {
+                pontosRef.current = pts || [];
+              }}
+            />
           </div>
 
           <div className="mt-6 flex justify-center text-sm text-zinc-300">
