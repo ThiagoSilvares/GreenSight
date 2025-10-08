@@ -157,9 +157,9 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="bg-black text-white px-6 py-16 max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-8">
-        <div className="lg:w-1/2">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      <section className="bg-black text-white px-6 py-16 max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8">
+        <div className="w-full lg:w-1/2 text-center lg:text-left">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight text-center lg:text-left">
             O Desafio dos <br /> Resíduos Urbanos
           </h2>
           <p className="text-gray-300 text-sm md:text-base mb-4">
@@ -170,7 +170,7 @@ const Home = () => {
             A falta de monitoramento eficiente agrava a situação, dificultando a identificação dos pontos críticos e a ação preventiva.
           </p>
         </div>
-        <div className="lg:w-1/2">
+        <div className="w-full lg:w-1/2">
           <img
             src={Enchente}
             alt="Imagem de enchente"
@@ -185,23 +185,19 @@ const Home = () => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Câmera</div>
-            <h3 className="text-base font-semibold mb-2">Câmeras Inteligentes</h3>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Câmeras Inteligentes</div>
             <p className="text-sm">Instaladas em veículos a fim de registrar imagens das vias, possibilitando a detecção e o mapeamento preciso da localização dos bueiros.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">GPS Nuvem</div>
-            <h3 className="text-base font-semibold mb-2">GPS e Armazenamento em Nuvem</h3>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">GPS e Armazenamento em Nuvem</div>
             <p className="text-sm">Geolocalização via GPS integrada a armazenamento em nuvem, garantindo a associação das imagens às coordenadas exatas e à segurança dos dados coletados.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">IA</div>
-            <h3 className="text-base font-semibold mb-2">Inteligência Artificial</h3>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Inteligência Artificial</div>
             <p className="text-sm">Algoritmos de visão computacional processam as imagens para identificar automaticamente a existência e posição dos bueiros, alimentando a base geoespacial do sistema.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Mapa</div>
-            <h3 className="text-base font-semibold mb-2">Mapa Interativo</h3>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Mapa Interativo</div>
             <p className="text-sm">Os dados processados são exibidos em mapas que permitem a visualização da distribuição dos bueiros na cidade, servindo como base para planejamento e ações de manutenção.</p>
           </div>
         </div>

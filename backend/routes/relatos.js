@@ -9,13 +9,27 @@ const pool = require('../db');
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
+const norm = (v) => (v ?? '').toString().trim();
+const makeAddress = ({ address, rua, numero, bairro }) => {
+  const a = norm(address);
+  if (a) return a;
+  const r = norm(rua);
+  const n = norm(numero);
+  const b = norm(bairro);
+  if (r && n && b) return `${r}, ${n} - ${b}`;
+  if (r && b && !n) return `${r} - ${b}`;
+  if (r && n && !b) return `${r}, ${n}`;
+  if (r) return r;
+  return '';
+};
+
 async function isAdmin(req, res, next) {
   try {
     const userEmail = (req.headers['x-user-email'] || '').trim().toLowerCase();
     if (!userEmail) return res.status(401).json({ message: 'Não autenticado.' });
 
     try {
-      const q = await pool.query( 
+      const q = await pool.query(
         'SELECT is_admin FROM public.usuarios WHERE LOWER(email) = $1 LIMIT 1',
         [userEmail]
       );
@@ -25,7 +39,6 @@ async function isAdmin(req, res, next) {
     } catch {
       if (/@admgreensight\.com$/i.test(userEmail)) return next();
     }
-
     return res.status(403).json({ message: 'Acesso restrito a administradores.' });
   } catch (e) {
     console.error('Erro em isAdmin:', e);
@@ -41,21 +54,19 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}_${base}${ext}`);
   },
 });
-
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file) return cb(null, true);
-    if (file.mimetype?.startsWith('image/')) return cb(null, true);
-    return cb(new Error('Envie apenas imagens'));
+    return cb(file.mimetype?.startsWith('image/') ? null : new Error('Envie apenas imagens'));
   },
 });
 
 router.get('/relatos', async (_req, res) => {
   try {
-    const { rows } = await pool.query( 
-      `SELECT id, author, latitude, longitude, image_path, created_at
+    const { rows } = await pool.query(
+      `SELECT id, author, address, content, latitude, longitude, image_path, created_at
          FROM public.relatos
         ORDER BY created_at DESC`
     );
@@ -66,31 +77,39 @@ router.get('/relatos', async (_req, res) => {
   }
 });
 
-function toNum(v) {
-  if (v == null) return NaN;
-  return parseFloat(String(v).trim().replace(',', '.'));
-}
-
-router.post('/relatos', upload.single('image'), async (req, res) => {
+router.post('/relatos', upload.any(), async (req, res) => {
   try {
-    const { author, latitude, longitude } = req.body;
-    const lat = toNum(latitude);
-    const lon = toNum(longitude);
+    console.log('[relatos:create] fields:', req.body);
+    console.log('[relatos:create] files:', (req.files || []).map(f => f.fieldname));
 
-    if (!author?.trim() || !Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return res.status(400).json({ message: 'Campos obrigatórios ausentes.' });
+    const author = norm(req.body.author);
+    const address = makeAddress({
+      address: req.body.address,
+      rua: req.body.rua,
+      numero: req.body.numero,
+      bairro: req.body.bairro,
+    });
+    const content = norm(req.body.content) || null;
+
+    if (!author) {
+      return res.status(400).json({ message: 'Informe o autor do relato.' });
     }
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      return res.status(400).json({ message: 'Coordenadas inválidas.' });
+    if (!address) {
+      return res.status(400).json({
+        message: 'Informe o endereço (rua, número e bairro).',
+        debug: { received: req.body }
+      });
     }
 
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    let imagePath = null;
+    const img = (req.files || []).find(f => f.fieldname === 'image');
+    if (img) imagePath = `/uploads/${path.basename(img.path)}`;
 
-    const { rows } = await pool.query( 
-      `INSERT INTO public.relatos (author, latitude, longitude, image_path)
+    const { rows } = await pool.query(
+      `INSERT INTO public.relatos (author, address, content, image_path)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, author, latitude, longitude, image_path, created_at`,
-      [author.trim(), lat, lon, imagePath]
+       RETURNING id, author, address, content, image_path, created_at`,
+      [author, address, content, imagePath]
     );
 
     return res.status(201).json(rows[0]);
@@ -106,7 +125,6 @@ router.post('/relatos', upload.single('image'), async (req, res) => {
 router.delete('/relatos/:id', isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-
     const del = await pool.query(
       `DELETE FROM public.relatos
         WHERE id = $1

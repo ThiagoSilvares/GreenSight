@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 import LogoGreenSight from '../assets/LogoGreenSight.png';
-import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
+import LogoEscrita from '../assets/LogoEscritaGreenSight.png'; 
 
 const API_BASE =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
-  process.env.REACT_APP_API_BASE_URL ||                      
-  (typeof window !== 'undefined' && window.__API_BASE__) ||   
+  process.env.REACT_APP_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
   'http://localhost:3001';
 
 const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
@@ -19,12 +19,11 @@ const Login = () => {
   const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
-  const togglePassword = () => setShowPassword((v) => !v);
+  const togglePassword = () => setShowPassword(v => !v);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErro('');
-
     try {
       const response = await fetch(`${API}/login`, {
         method: 'POST',
@@ -43,7 +42,6 @@ const Login = () => {
       }
 
       const data = await response.json();
-
       if (data?.sucesso) {
         const papel = email.includes('@admgreensight') ? 'Administrador' : 'Funcionário';
         const usuario = {
@@ -54,7 +52,7 @@ const Login = () => {
         };
         localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
         localStorage.setItem('usuario', JSON.stringify(usuario));
-        navigate('/');
+        navigate('/mapa');
       } else {
         setErro(data?.mensagem || 'Erro ao fazer login');
       }
@@ -65,77 +63,101 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-black text-white font-sans">
-      <div className="hidden md:flex w-1/2 flex-col items-start justify-center relative bg-black px-10">
+    <div className="min-h-screen bg-black text-white font-sans flex">
+      <aside className="hidden md:flex w-1/2 relative items-center justify-center">
         <Link
           to="/"
-          className="absolute top-16 left-14 text-lg flex items-center border-b border-white hover:border-green-500 transition-all"
+          className="absolute top-10 left-12 flex items-center gap-2 text-white/90 hover:text-white transition"
         >
-          <FaArrowLeft className="text-white mr-2" />
-          <span className="text-white font-medium">Voltar</span>
+          <FaArrowLeft />
+          <span className="underline underline-offset-4">Voltar</span>
         </Link>
-
-        <div className="w-full flex justify-end pr-2">
+        <img
+          src={LogoGreenSight}
+          alt="Ilustração Green Sight"
+          className="max-w-[580px] w-[80%] h-auto object-contain"
+        />
+      </aside>
+      <section className="w-full md:w-1/2 flex flex-col">
+        <div className="md:hidden sticky top-0 z-10 bg-black/95 border-b border-zinc-800 px-4 py-3 grid grid-cols-[36px_1fr_36px] items-center">
+          <Link to="/" aria-label="Voltar" className="justify-self-start text-white">
+            <FaArrowLeft />
+          </Link>
+          <div className="justify-self-center">
+            <img src={LogoEscrita} alt="Green Sight" className="h-6 w-auto" />
+          </div>
+          <span />
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-5 sm:px-8 py-8 md:py-0">
+          <Link to="/" className="hidden md:block mb-6">
+            <img src={LogoEscrita} alt="Green Sight" className="h-14 w-auto" />
+          </Link>
           <img
             src={LogoGreenSight}
-            alt="Logo Green Sight"
-            className="w-[550px] h-[550px] object-contain"
+            alt="Ilustração Green Sight"
+            className="md:hidden mb-6 mt-2 h-28 w-auto object-contain"
           />
-        </div>
-      </div>
+          <form
+            onSubmit={handleLogin}
+            className="w-full max-w-3xl md:max-w-xl flex flex-col gap-5"
+          >
+            <div className="relative">
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="E-mail"
+                required
+                className="w-full bg-[#e8f0fe] text-black placeholder-black/60 rounded-sm px-4 py-3 outline-none"
+              />
+            </div>
 
-      <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-8 -mt-12">
-        <Link to="/">
-          <img src={LogoEscrita} alt="Logo Escrita Green Sight" className="h-20 w-auto cursor-pointer" />
-        </Link>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="Senha"
+                required
+                className="w-full bg-[#e8f0fe] text-black placeholder-black/60 rounded-sm px-4 py-3 pr-10 outline-none"
+              />
+              <button
+                type="button"
+                onClick={togglePassword}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded focus:outline-none active:scale-95"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showPassword ? (
+                  <FaEye className="text-green-500 text-lg" />
+                ) : (
+                  <FaEyeSlash className="text-zinc-600 text-lg" />
+                )}
+              </button>
+            </div>
 
-        <form onSubmit={handleLogin} className="w-full max-w-lg mt-4 space-y-6">
-          <div className="relative border-b border-zinc-600">
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-mail"
-              required
-              className="w-full bg-transparent border-none outline-none text-white placeholder-gray-400 pt-4 pb-1 text-base"
-            />
-          </div>
+            <div className="text-left text-sm -mt-1">
+              <a href="#" className="text-zinc-300 hover:text-white underline">
+                Esqueci minha senha
+              </a>
+            </div>
 
-          <div className="relative border-b border-zinc-600">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              id="senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="Senha"
-              required
-              className="w-full bg-transparent border-none outline-none text-white placeholder-gray-400 pt-4 pb-1 text-base"
-            />
+            {erro && (
+              <div className="text-red-500 text-sm -mt-2">
+                {erro}
+              </div>
+            )}
+
             <button
-              type="button"
-              onClick={togglePassword}
-              className="absolute right-2 top-3 focus:outline-none"
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-md transition"
             >
-              {showPassword ? (
-                <FaEye className="text-green-500 text-lg" />
-              ) : (
-                <FaEyeSlash className="text-gray-500 text-lg" />
-              )}
+              ENTRAR
             </button>
-          </div>
-
-          <div className="text-left text-sm">
-            <a href="#" className="text-gray-300 underline">Esqueci minha senha</a>
-          </div>
-
-          {erro && <div className="text-red-500 text-sm mt-2">{erro}</div>}
-
-          <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white py-2 font-semibold text-base rounded-md">
-            ENTRAR
-          </button>
-        </form>
-      </div>
+          </form>
+        </div>
+      </section>
     </div>
   );
 };

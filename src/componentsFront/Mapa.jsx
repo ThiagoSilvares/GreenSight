@@ -235,7 +235,7 @@ const Mapa = () => {
             </h1>
             <span />
           </div>
-          <div className="md:hidden mb-6 flex justify-start pl-2">
+          <div className="md:hidden mt-2 mb-6 flex justify-center">
             <span className="border px-3 py-1 rounded-md text-xs">Administrador</span>
           </div>
 
