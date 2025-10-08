@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -56,6 +56,7 @@ function LegendZonas() {
 
 const Graficos = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [resumo, setResumo] = useState(null);
   const [bueiros, setBueiros] = useState([]);
@@ -67,6 +68,9 @@ const Graficos = () => {
   const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
 
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
+
+  const isActive = (path) =>
+    location.pathname === path ? "text-green-500" : "hover:text-green-500";
 
   useEffect(() => {
     fetch(`${API}/resumo`)
@@ -208,20 +212,36 @@ const Graficos = () => {
           />
         </Link>
 
-        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100">
+        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100 items-center">
           {isUsuarioLogado && (
-            <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
+            <Link to="/mapa" className={`${isActive("/mapa")} transition-all duration-200`}>
               <FaMapMarkedAlt className="inline mr-1" /> Mapa
             </Link>
           )}
-          <Link to="/relatos" className="hover:text-green-500 transition-all duration-200">
+          <Link to="/relatos" className={`${isActive("/relatos")} transition-all duration-200`}>
             <FaRegCommentDots className="inline mr-1" /> Relatos
           </Link>
-          <Link to="/graficos" className="text-green-500 transition-all duration-200 font-bold">
+          <Link to="/graficos" className={`${isActive("/graficos")} transition-all duration-200`}>
             <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
-          {!isUsuarioLogado && (
-            <Link to="/login" className="hover:text-green-500 transition-all duration-200">
+
+          {isUsuarioLogado ? (
+            <>
+              <Link
+                to="/cadastro-bueiros"
+                className={`${isActive("/cadastro-bueiros")} transition-all duration-200`}
+              >
+                <FaPlus className="inline mr-1" /> Cadastro de Bueiros
+              </Link>
+              <button
+                onClick={() => setMostrarConfirmacaoLogout(true)}
+                className="hover:text-green-500 transition-all duration-200"
+              >
+                <FaSignOutAlt className="inline mr-1" /> Sair
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className={`${isActive("/login")} transition-all duration-200`}>
               <FaUser className="inline mr-1" /> Login
             </Link>
           )}
@@ -246,7 +266,7 @@ const Graficos = () => {
                 <Link
                   to="/mapa"
                   onClick={() => setNavOpen(false)}
-                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                  className={`flex items-center gap-2 py-2 ${isActive("/mapa")}`}
                 >
                   <FaMapMarkedAlt /> Mapa
                 </Link>
@@ -256,7 +276,7 @@ const Graficos = () => {
               <Link
                 to="/relatos"
                 onClick={() => setNavOpen(false)}
-                className="flex items-center gap-2 py-2 hover:text-green-500"
+                className={`flex items-center gap-2 py-2 ${isActive("/relatos")}`}
               >
                 <FaRegCommentDots /> Relatos
               </Link>
@@ -265,7 +285,7 @@ const Graficos = () => {
               <Link
                 to="/graficos"
                 onClick={() => setNavOpen(false)}
-                className="flex items-center gap-2 py-2 hover:text-green-500"
+                className={`flex items-center gap-2 py-2 ${isActive("/graficos")}`}
               >
                 <FaChartBar /> Gráficos
               </Link>
@@ -280,7 +300,7 @@ const Graficos = () => {
                       setNavOpen(false);
                       navigate("/cadastro-bueiros");
                     }}
-                    className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+                    className={`w-full text-left flex items-center gap-2 py-2 ${isActive("/cadastro-bueiros")}`}
                   >
                     <FaPlus /> Cadastro de Bueiros
                   </button>
@@ -304,7 +324,7 @@ const Graficos = () => {
                 <Link
                   to="/login"
                   onClick={() => setNavOpen(false)}
-                  className="flex items-center gap-2 py-2 hover:text-green-500"
+                  className={`flex items-center gap-2 py-2 ${isActive("/login")}`}
                 >
                   <FaUser /> Login
                 </Link>
@@ -315,8 +335,8 @@ const Graficos = () => {
       </header>
 
       <main className="pt-20 md:pt-24 px-6 md:px-10 pb-20 max-w-5xl mx-auto">
-        <h1 className="text-3xl md:text-5xl font-bold mb-10 text-center">
-          Indicadores do Mapeamento de Bueiros
+        <h1 className="text-3xl md:text-5xl font-bold mb-10 text-left">
+          Indicadores de Mapeamento
         </h1>
 
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg mb-10">

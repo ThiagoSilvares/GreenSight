@@ -45,7 +45,7 @@ const Home = () => {
           />
         </button>
 
-        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100">
+        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100 items-center">
           {isUsuarioLogado && (
             <Link to="/mapa" className="hover:text-green-500 transition-all duration-200">
               <FaMapMarkedAlt className="inline mr-1" /> Mapa
@@ -57,7 +57,23 @@ const Home = () => {
           <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
             <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
-          {!isUsuarioLogado && (
+
+          {isUsuarioLogado ? (
+            <>
+              <Link
+                to="/cadastro-bueiros"
+                className="hover:text-green-500 transition-all duration-200"
+              >
+                <FaPlus className="inline mr-1" /> Cadastro de Bueiros
+              </Link>
+              <button
+                onClick={() => setMostrarConfirmacaoLogout(true)}
+                className="hover:text-green-500 transition-all duration-200"
+              >
+                <FaSignOutAlt className="inline mr-1" /> Sair
+              </button>
+            </>
+          ) : (
             <Link to="/login" className="hover:text-green-500 transition-all duration-200">
               <FaUser className="inline mr-1" /> Login
             </Link>
@@ -178,7 +194,7 @@ const Home = () => {
 
       <section className="text-center px-6 pt-20 md:pt-40 pb-8 md:pb-8 max-w-5xl mx-auto">
         <h2 className="text-4xl md:text-6xl font-extrabold mb-6 leading-snug">
-          Monitoramento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras.
+          Monitoramento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras
         </h2>
         <p className="text-gray-300 max-w-3xl mx-auto mb-8 text-sm md:text-base">
           O Green Sight utiliza tecnologia de câmeras e análise de dados para o mapeamento de bueiros em tempo real,
@@ -224,7 +240,7 @@ const Home = () => {
       <section className="bg-black text-white px-6 py-16 max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8">
         <div className="w-full lg:w-1/2 text-center lg:text-left">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight text-center lg:text-left">
-            O Desafio dos <br /> Resíduos Urbanos
+            Os Desafios Gerados <br /> Pelos Resíduos Urbanos
           </h2>
           <p className="text-gray-300 text-sm md:text-base mb-4">
             O acúmulo de lixo em bueiros é um problema crescente nas cidades, causando alagamentos, proliferação de doenças e poluição ambiental.
@@ -270,7 +286,7 @@ const Home = () => {
       <section className="bg-black text-white px-6 py-16 max-w-4xl mx-auto text-center">
         <h2 className="text-2xl md:text-3xl font-bold mb-4">Faça Parte da Mudança!</h2>
         <p className="text-gray-300 mb-8">
-          Quer saber mais sobre o Green Sight ou como sua cidade pode se beneficiar?
+          Tem alguma dúvida, sugestão ou gostaria de colaborar com o Green Sight? Entre em contato conosco!
         </p>
         <form className="bg-zinc-200 rounded-md shadow-md p-6 text-black space-y-4 max-w-xl mx-auto">
           <input

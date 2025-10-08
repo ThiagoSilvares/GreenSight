@@ -33,8 +33,8 @@ const toAbsoluteUrl = (url) => {
 const Relatos = () => {
   const navigate = useNavigate();
   const isUsuarioLogado = !!localStorage.getItem("usuarioLogado");
-  const rawUser = localStorage.getItem("usuarioLogado");
 
+  const rawUser = localStorage.getItem("usuarioLogado");
   let email = null;
   try {
     const parsed = JSON.parse(rawUser);
@@ -42,7 +42,6 @@ const Relatos = () => {
   } catch {
     email = rawUser || null;
   }
-
   const isAdmin = !!email && /@admgreensight\.com$/i.test(email);
 
   const location = useLocation();
@@ -54,9 +53,11 @@ const Relatos = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [author, setAuthor] = useState("");
+
   const [rua, setRua] = useState("");
   const [bairro, setBairro] = useState("");
   const [numero, setNumero] = useState("");
+
   const [content, setContent] = useState("");
   const MAX_LEN = 1000;
 
@@ -76,17 +77,20 @@ const Relatos = () => {
     try {
       setLoading(true);
       const r = await fetch(`${API}/relatos`);
+
       if (!r.ok) {
         if (posts.length > 0) setError(`Falha ao carregar (${r.status}).`);
         setPosts([]);
         return;
       }
+
       const data = await r.json().catch(() => null);
       if (!Array.isArray(data)) {
         if (posts.length > 0) setError("Resposta inesperada do servidor.");
         setPosts([]);
         return;
       }
+
       const mapped = data.map((it) => ({
         id: it.id,
         author: it.author,
@@ -95,6 +99,7 @@ const Relatos = () => {
         imageUrl: it.image_path,
         createdAt: it.created_at,
       }));
+
       setError(null);
       setPosts(mapped);
     } catch (e) {
@@ -108,13 +113,8 @@ const Relatos = () => {
 
   useEffect(() => {
     fetchRelatos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("usuarioLogado");
-    localStorage.removeItem("usuario");
-    navigate("/");
-  };
 
   function handleFileSelect(file) {
     if (!file) return;
@@ -155,8 +155,7 @@ const Relatos = () => {
     if (!rua.trim()) return alert("Informe a rua.");
     if (!numero.toString().trim()) return alert("Informe o número.");
     if (!bairro.trim()) return alert("Informe o bairro.");
-    if (content.length > MAX_LEN)
-      return alert(`Relato muito longo (máx. ${MAX_LEN} caracteres).`);
+    if (content.length > MAX_LEN) return alert(`Relato muito longo (máx. ${MAX_LEN} caracteres).`);
 
     const address = `${rua.trim()}, ${numero.toString().trim()} - ${bairro.trim()}`;
 
@@ -167,6 +166,7 @@ const Relatos = () => {
       form.append("rua", rua.trim());
       form.append("numero", numero.toString().trim());
       form.append("bairro", bairro.trim());
+
       if (content.trim()) form.append("content", content.trim());
       if (imageFile) form.append("image", imageFile);
 
@@ -218,10 +218,12 @@ const Relatos = () => {
         method: "DELETE",
         headers: { "X-User-Email": email || "" },
       });
+
       if (resp.status === 204) {
         setPosts((prev) => prev.filter((p) => p.id !== relatoId));
         return;
       }
+
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.message || "Falha ao excluir o relato.");
     } catch (e) {
@@ -230,12 +232,22 @@ const Relatos = () => {
     }
   }
 
-  const renderLocalInfo = (p) =>
-    p?.address ? (
-      <p>
-        <span className="font-semibold">Endereço:</span> {p.address}
-      </p>
-    ) : null;
+  const renderLocalInfo = (p) => {
+    if (p?.address) {
+      return (
+        <p>
+          <span className="font-semibold">Endereço:</span> {p.address}
+        </p>
+      );
+    }
+    return null;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("usuarioLogado");
+    localStorage.removeItem("usuario");
+    navigate("/");
+  };
 
   return (
     <div className="bg-black text-white min-h-screen font-sans flex flex-col">
@@ -260,7 +272,23 @@ const Relatos = () => {
           <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
             <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
-          {!isUsuarioLogado && (
+
+          {isUsuarioLogado ? (
+            <>
+              <Link
+                to="/cadastro-bueiros"
+                className="hover:text-green-500 transition-all duration-200"
+              >
+                <FaPlus className="inline mr-1" /> Cadastro de Bueiros
+              </Link>
+              <button
+                onClick={() => setMostrarConfirmacaoLogout(true)}
+                className="hover:text-green-500 transition-all duration-200"
+              >
+                <FaSignOutAlt className="inline mr-1" /> Sair
+              </button>
+            </>
+          ) : (
             <Link to="/login" className={`${isActive("/login")} transition-all duration-200`}>
               <FaUser className="inline mr-1" /> Login
             </Link>
@@ -355,19 +383,23 @@ const Relatos = () => {
       </header>
 
       <main className="pt-20 md:pt-28 pb-12 px-6 max-w-5xl mx-auto w-full flex-1">
-        <div className="mb-5">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-3 mb-6">
+          <h1 className="text-3xl md:text-5xl font-bold">Relatos da Comunidade</h1>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition duration-200 text-sm"
+            className="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition duration-200 text-sm self-start md:self-auto"
           >
             + Nova publicação
           </button>
         </div>
+
         <section className="bg-zinc-100 text-black rounded-md shadow-md p-0 overflow-hidden">
           {loading ? (
             <div className="px-5 py-3 text-base text-zinc-700">Carregando...</div>
           ) : posts.length === 0 ? (
-            <div className="px-5 py-3 text-base text-zinc-700">Ainda não há relatos publicados.</div>
+            <div className="px-5 py-3 text-base text-zinc-700">
+              Ainda não há relatos publicados.
+            </div>
           ) : error ? (
             <div className="px-5 py-3 text-base text-red-700 bg-red-50 border-t border-red-200">
               {error}{" "}
@@ -423,6 +455,32 @@ const Relatos = () => {
         </section>
       </main>
 
+      <footer className="bg-black text-zinc-400 text-sm border-t border-zinc-700 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+          <div className="flex flex-col items-center gap-4 sm:gap-6 md:grid md:grid-cols-3 md:items-start">
+            <div className="order-2 md:order-1 text-center md:text-left">
+              <p className="font-semibold">© {year} GREEN SIGHT</p>
+              <p>Todos os direitos reservados.</p>
+            </div>
+
+            <div className="order-1 md:order-2 text-center italic text-zinc-300 px-4">
+              Um projeto de TCC para um futuro mais sustentável.
+            </div>
+
+            <div className="order-3 md:order-3 w-full">
+              <nav className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
+                <a href="#" className="hover:text-white inline-block py-1 px-2">
+                  Privacidade
+                </a>
+                <a href="#" className="hover:text-white inline-block py-1 px-2">
+                  Termos de Uso
+                </a>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {mostrarConfirmacaoLogout && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-zinc-900 p-6 rounded-lg shadow-lg text-center">
@@ -448,29 +506,130 @@ const Relatos = () => {
         </div>
       )}
 
-      <footer className="bg-black text-zinc-400 text-sm border-t border-zinc-700">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
-          <div className="flex flex-col items-center gap-4 sm:gap-6 md:grid md:grid-cols-3 md:items-start">
-            <div className="order-2 md:order-1 text-center md:text-left">
-              <p className="font-semibold">© {year} GREEN SIGHT</p>
-              <p>Todos os direitos reservados.</p>
+      {showForm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-100 text-black w-full max-w-md rounded-md shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b bg-zinc-50">
+              <h3 className="text-sm font-bold">Criar publicação</h3>
+              <button
+                onClick={() => setShowForm(false)}
+                className="text-sm px-2 py-1 rounded hover:bg-zinc-200"
+                aria-label="Fechar"
+              >
+                ×
+              </button>
             </div>
-            <div className="order-1 md:order-2 text-center italic text-zinc-300 px-4">
-              Um projeto de TCC para um futuro mais sustentável.
-            </div>
-            <div className="order-3 md:order-3 w-full">
-              <nav className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
-                <a href="#" className="hover:text-white inline-block py-1 px-2">
-                  Privacidade
-                </a>
-                <a href="#" className="hover:text-white inline-block py-1 px-2">
-                  Termos de Uso
-                </a>
-              </nav>
-            </div>
+
+            <form onSubmit={handlePublish} className="p-4 grid gap-4">
+              <div>
+                <label className="block text-[12px] text-zinc-600 mb-1">Seu nome</label>
+                <input
+                  type="text"
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  placeholder="Ex.: Primeiro e Último Nome"
+                  className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] text-zinc-600 mb-1">Imagem (opcional)</label>
+                <div
+                  onDrop={onDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  className="group flex flex-col items-center justify-center gap-2 border border-dashed rounded p-4 bg-white hover:border-green-600"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="up-img"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                  />
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Pré-visualização" className="max-h-52 rounded" />
+                  ) : (
+                    <>
+                      <p className="text-[13px] text-zinc-800">
+                        Arraste a imagem aqui ou{" "}
+                        <label htmlFor="up-img" className="text-green-700 underline cursor-pointer">
+                          clique para selecionar
+                        </label>
+                      </p>
+                      <p className="text-[11px] text-zinc-500">JPG, PNG... (opcional)</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="block text-[12px] text-zinc-600 mb-1">Rua</label>
+                  <input
+                    type="text"
+                    value={rua}
+                    onChange={(e) => setRua(e.target.value)}
+                    placeholder="Ex.: Rua das Flores"
+                    className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] text-zinc-600 mb-1">Número</label>
+                    <input
+                      type="text"
+                      value={numero}
+                      onChange={(e) => setNumero(e.target.value)}
+                      placeholder="Ex.: 123"
+                      className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] text-zinc-600 mb-1">Bairro</label>
+                    <input
+                      type="text"
+                      value={bairro}
+                      onChange={(e) => setBairro(e.target.value)}
+                      placeholder="Ex.: Centro"
+                      className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] text-zinc-600 mb-1">Relato</label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value.slice(0, MAX_LEN))}
+                  placeholder="Descreva o problema..."
+                  rows={4}
+                  className="w-full rounded border border-zinc-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-green-600 resize-y"
+                />
+                <div className="text-[11px] text-zinc-500 text-right mt-1">
+                  {content.length}/{MAX_LEN}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-3 py-1.5 text-[13px] rounded-full border hover:bg-zinc-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 text-[13px] rounded-full bg-green-700 hover:bg-green-600 text-white font-semibold"
+                >
+                  Publicar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </footer>
+      )}
     </div>
   );
 };

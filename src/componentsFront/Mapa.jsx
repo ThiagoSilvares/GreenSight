@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars,
   FaTimes,
@@ -27,7 +27,6 @@ const API_BASE =
 const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
 
 const Mapa = () => {
-  const [sidebarAberta, setSidebarAberta] = useState(false); // só desktop
   const [dadosResumo, setDadosResumo] = useState(null);
   const [bueirosMapa, setBueirosMapa] = useState([]);
   const [zonas, setZonas] = useState({ norte: 0, sul: 0, leste: 0, oeste: 0 });
@@ -42,6 +41,9 @@ const Mapa = () => {
   const [toast, setToast] = useState(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = (path) =>
+    location.pathname === path ? 'text-green-500 font-bold' : 'hover:text-green-500';
 
   useEffect(() => {
     const logado = localStorage.getItem('usuarioLogado');
@@ -177,16 +179,25 @@ const Mapa = () => {
           />
         </Link>
 
-        <nav className="hidden md:flex space-x-8 text-base font-medium tracking-wide text-zinc-100">
-          <Link to="/mapa" className="hover:text-green-500 transition-all duration-200 font-bold">
+        <nav className="hidden md:flex items-center space-x-8 text-base font-medium tracking-wide text-zinc-100">
+          <Link to="/mapa" className={`${isActive('/mapa')} transition-all duration-200`}>
             <FaMapMarkedAlt className="inline mr-1" /> Mapa
           </Link>
-          <Link to="/relatos" className="hover:text-green-500 transition-all duration-200">
+          <Link to="/relatos" className={`${isActive('/relatos')} transition-all duration-200`}>
             <FaRegCommentDots className="inline mr-1" /> Relatos
           </Link>
-          <Link to="/graficos" className="hover:text-green-500 transition-all duration-200">
+          <Link to="/graficos" className={`${isActive('/graficos')} transition-all duration-200`}>
             <FaChartBar className="inline mr-1" /> Gráficos
           </Link>
+          <Link to="/cadastro-bueiros" className="hover:text-green-500 transition-all duration-200">
+            <FaPlus className="inline mr-1" /> Cadastro de Bueiros
+          </Link>
+          <button
+            onClick={() => setMostrarConfirmacaoLogout(true)}
+            className="hover:text-green-500 transition-all duration-200"
+          >
+            <FaSignOutAlt className="inline mr-1" /> Sair
+          </button>
         </nav>
 
         <button
@@ -207,7 +218,7 @@ const Mapa = () => {
               <Link
                 to="/mapa"
                 onClick={() => setNavOpen(false)}
-                className="flex items-center gap-2 py-2 hover:text-green-500"
+                className={`flex items-center gap-2 py-2 ${isActive('/mapa')}`}
               >
                 <FaMapMarkedAlt /> Mapa
               </Link>
@@ -216,7 +227,7 @@ const Mapa = () => {
               <Link
                 to="/relatos"
                 onClick={() => setNavOpen(false)}
-                className="flex items-center gap-2 py-2 hover:text-green-500"
+                className={`flex items-center gap-2 py-2 ${isActive('/relatos')}`}
               >
                 <FaRegCommentDots /> Relatos
               </Link>
@@ -225,24 +236,20 @@ const Mapa = () => {
               <Link
                 to="/graficos"
                 onClick={() => setNavOpen(false)}
-                className="flex items-center gap-2 py-2 hover:text-green-500"
+                className={`flex items-center gap-2 py-2 ${isActive('/graficos')}`}
               >
                 <FaChartBar /> Gráficos
               </Link>
             </li>
-
             <li className="mt-2 border-t border-zinc-800" />
-
             <li>
-              <button
-                onClick={() => {
-                  setNavOpen(false);
-                  navigate('/cadastro-bueiros');
-                }}
-                className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
+              <Link
+                to="/cadastro-bueiros"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 py-2 hover:text-green-500"
               >
                 <FaPlus /> Cadastro de Bueiros
-              </button>
+              </Link>
             </li>
             <li>
               <button
@@ -259,43 +266,17 @@ const Mapa = () => {
         </div>
       </header>
 
-      <div className="pt-20 md:pt-24 flex">
-        <div className={`hidden md:block ${sidebarAberta ? 'w-64' : 'w-16'} bg-black transition-all duration-300 min-h-screen p-4`}>
-          <button onClick={() => setSidebarAberta(!sidebarAberta)} className="mb-6 text-green-400">
-            {sidebarAberta ? <FaTimes size={28} /> : <FaBars size={28} />}
-          </button>
-          {sidebarAberta && (
-            <ul className="space-y-8 mt-6 text-lg">
-              <li
-                onClick={() => navigate('/cadastro-bueiros')}
-                className="hover:text-green-400 cursor-pointer flex items-center gap-3"
-              >
-                <FaPlus size={20} /> Cadastro de Bueiros
-              </li>
-              <li
-                onClick={() => setMostrarConfirmacaoLogout(true)}
-                className="hover:text-green-400 cursor-pointer flex items-center gap-3"
-              >
-                <FaSignOutAlt size={20} /> Sair
-              </li>
-            </ul>
-          )}
-        </div>
-
-
-        <main className="flex-1 p-4 md:p-10">
+      <div className="pt-20 md:pt-24">
+        <main className="p-4 md:p-10 max-w-[1400px] mx-auto">
+          <div className="md:flex items-center justify-between mb-6 md:mb-8 hidden">
+            <h1 className="text-3xl md:text-5xl font-bold mb-1">Central de Monitoramento</h1>
+            <span className="border px-3 py-1 rounded-md text-sm">Administrador</span>
+          </div>
           <div className="md:hidden mb-6">
-            <h1 className="text-3xl font-bold leading-tight text-center">
-              Central de Monitoramento
-            </h1>
+            <h1 className="text-3xl font-bold leading-tight text-center">Central de Monitoramento</h1>
             <div className="mt-2 flex justify-center">
               <span className="border px-3 py-1 rounded-md text-xs">Administrador</span>
             </div>
-          </div>
-
-          <div className="hidden md:flex items-center justify-between mb-6 md:mb-8">
-            <h1 className="text-5xl font-bold leading-tight">Central de Monitoramento</h1>
-            <span className="border px-3 py-1 rounded-md text-sm">Administrador</span>
           </div>
 
           <form onSubmit={handleBuscar} className="mb-3">
@@ -354,11 +335,7 @@ const Mapa = () => {
             </div>
           </form>
 
-          {toast?.text && (
-            <div className="mb-4 text-sm text-red-400">
-              {toast.text}
-            </div>
-          )}
+          {toast?.text && <div className="mb-4 text-sm text-red-400">{toast.text}</div>}
 
           <div className="bg-zinc-800 rounded-lg overflow-hidden relative z-0">
             <MapComponent
