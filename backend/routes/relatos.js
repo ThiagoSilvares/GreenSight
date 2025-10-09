@@ -50,7 +50,10 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
-    const base = path.basename(file.originalname || 'img', ext).replace(/\s+/g, '_');
+    const base = path
+      .basename(file.originalname || 'img', ext)
+      .replace(/\s+/g, '_')
+      .replace(/[^\w.-]/g, '');
     cb(null, `${Date.now()}_${base}${ext}`);
   },
 });
@@ -59,7 +62,8 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file) return cb(null, true);
-    return cb(file.mimetype?.startsWith('image/') ? null : new Error('Envie apenas imagens'));
+    if (file.mimetype && file.mimetype.startsWith('image/')) return cb(null, true);
+    return cb(new Error('Envie apenas imagens'), false);
   },
 });
 
@@ -77,10 +81,10 @@ router.get('/relatos', async (_req, res) => {
   }
 });
 
-router.post('/relatos', upload.any(), async (req, res) => {
+router.post('/relatos', upload.single('image'), async (req, res) => {
   try {
     console.log('[relatos:create] fields:', req.body);
-    console.log('[relatos:create] files:', (req.files || []).map(f => f.fieldname));
+    console.log('[relatos:create] file:', req.file?.fieldname);
 
     const author = norm(req.body.author);
     const address = makeAddress({
@@ -97,13 +101,14 @@ router.post('/relatos', upload.any(), async (req, res) => {
     if (!address) {
       return res.status(400).json({
         message: 'Informe o endereço (rua, número e bairro).',
-        debug: { received: req.body }
+        debug: { received: req.body },
       });
     }
 
     let imagePath = null;
-    const img = (req.files || []).find(f => f.fieldname === 'image');
-    if (img) imagePath = `/uploads/${path.basename(img.path)}`;
+    if (req.file) {
+      imagePath = `/uploads/${path.basename(req.file.path)}`;
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO public.relatos (author, address, content, image_path)

@@ -434,10 +434,10 @@ const Relatos = () => {
                     <img
                       src={toAbsoluteUrl(p.imageUrl)}
                       alt="Imagem do relato"
-                      className="mt-4 w-full max-h-[300px] object-contain rounded bg-black"
+                      className="mt-4 w-full max-h-[480px] object-contain rounded"
                     />
                   )}
-
+                  
                   <div className="mt-3 text-sm text-zinc-700 space-y-1">
                     {renderLocalInfo(p)}
                     {p?.content && (
