@@ -6,6 +6,7 @@ const pool = require('../db');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { randomUUID } = require('crypto'); 
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -30,8 +31,7 @@ const imageUrl = (id) => `${PUBLIC_BASE_URL}/api/bueiros/${id}/imagem`;
 
 router.get('/bueiros', async (_req, res) => {
   try {
-    const result = await pool.query(
-      `
+    const result = await pool.query(`
       SELECT
         id,
         COALESCE(ts_utc, data_monitoramento) AS data_monitoramento,
@@ -41,8 +41,7 @@ router.get('/bueiros', async (_req, res) => {
       FROM public.bueiros
       WHERE localizacao IS NOT NULL
       ORDER BY COALESCE(ts_utc, data_monitoramento) DESC, id DESC;
-      `
-    );
+    `);
     const rows = result.rows.map((r) => ({ ...r, image_url: imageUrl(r.id) }));
     return res.json(rows);
   } catch (err) {
@@ -96,9 +95,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
 
     if (hasZonas) {
       const whereCity = hasMunicipios
-        ? (hasUnaccent
-            ? `unaccent(m.nome) ILIKE unaccent($1)`
-            : `m.nome ILIKE $1`)
+        ? (hasUnaccent ? `unaccent(m.nome) ILIKE unaccent($1)` : `m.nome ILIKE $1`)
         : null;
 
       const sql = `
@@ -129,7 +126,7 @@ router.get('/bueiros/por-zona', async (req, res) => {
           SELECT bn.*
           FROM bueiros_norm bn
           WHERE NOT EXISTS (SELECT 1 FROM city)
-                OR EXISTS (SELECT 1 FROM city c WHERE ST_Covers(c.geom, bn.geom))
+             OR EXISTS (SELECT 1 FROM city c WHERE ST_Covers(c.geom, bn.geom))
         ),
         zonas_norm AS (
           SELECT z.nome,
@@ -264,13 +261,14 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
       return res.status(200).json({ sucesso: true, bueiro: best, updated: false });
     }
 
+    const newId = randomUUID();
     const ins = await pool.query(
       `
-      INSERT INTO public.bueiros (localizacao, data_monitoramento, conf)
-      VALUES (ST_SetSRID(ST_MakePoint($1, $2), 4326), NOW(), $3)
+      INSERT INTO public.bueiros (id, localizacao, data_monitoramento, conf)
+      VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), NOW(), $4)
       RETURNING id, data_monitoramento, ST_Y(localizacao) AS latitude, ST_X(localizacao) AS longitude, conf;
       `,
-      [lon, lat, Number.isFinite(conf) ? conf : null]
+      [newId, lon, lat, Number.isFinite(conf) ? conf : null]
     );
     await saveImageFor(ins.rows[0].id, file);
     return res.status(201).json({ sucesso: true, bueiro: ins.rows[0], created: true });

@@ -265,11 +265,11 @@ const Home = () => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Câmeras Inteligentes</div>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Câmeras</div>
             <p className="text-sm">Instaladas em veículos a fim de registrar imagens das vias, possibilitando a detecção e o mapeamento preciso da localização dos bueiros.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">GPS e Armazenamento em Nuvem</div>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">GPS e Cloud</div>
             <p className="text-sm">Geolocalização via GPS integrada a armazenamento em nuvem, garantindo a associação das imagens às coordenadas exatas e à segurança dos dados coletados.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
