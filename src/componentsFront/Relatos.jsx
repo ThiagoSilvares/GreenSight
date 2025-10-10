@@ -522,7 +522,7 @@ const Relatos = () => {
 
             <form onSubmit={handlePublish} className="p-4 grid gap-4">
               <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">Seu nome</label>
+                <label className="block text-[12px] mb-1 font-bold">Seu nome</label>
                 <input
                   type="text"
                   value={author}
@@ -533,7 +533,7 @@ const Relatos = () => {
               </div>
 
               <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">Imagem (opcional)</label>
+                <label className="block text-[12px] mb-1 font-bold">Imagem (opcional)</label>
                 <div
                   onDrop={onDrop}
                   onDragOver={(e) => e.preventDefault()}
@@ -564,7 +564,7 @@ const Relatos = () => {
 
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-[12px] text-zinc-600 mb-1">Rua</label>
+                  <label className="block text-[12px] mb-1 font-bold">Rua</label>
                   <input
                     type="text"
                     value={rua}
@@ -575,7 +575,7 @@ const Relatos = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[12px] text-zinc-600 mb-1">Número</label>
+                    <label className="block text-[12px] mb-1 font-bold">Número</label>
                     <input
                       type="text"
                       value={numero}
@@ -585,7 +585,7 @@ const Relatos = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] text-zinc-600 mb-1">Bairro</label>
+                    <label className="block text-[12px] mb-1 font-bold">Bairro</label>
                     <input
                       type="text"
                       value={bairro}
@@ -598,7 +598,7 @@ const Relatos = () => {
               </div>
 
               <div>
-                <label className="block text-[12px] text-zinc-600 mb-1">Relato</label>
+                <label className="block text-[12px] mb-1 font-bold">Relato</label>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value.slice(0, MAX_LEN))}
