@@ -434,7 +434,7 @@ const Relatos = () => {
                     <img
                       src={toAbsoluteUrl(p.imageUrl)}
                       alt="Imagem do relato"
-                      className="mt-4 w-full max-h-[480px] object-contain rounded"
+                      className="mt-4 w-full max-h-[350px] object-contain rounded"
                     />
                   )}
                   
