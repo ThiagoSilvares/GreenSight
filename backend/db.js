@@ -14,8 +14,8 @@ const pool = new Pool({
   password: process.env.DATABASE_PASSWORD,
   ssl,
   max: 10,                
-  idleTimeoutMillis: 10_000,   
-  connectionTimeoutMillis: 10_000, 
+  idleTimeoutMillis: 30000,   
+  connectionTimeoutMillis: 10000, 
 });
 
 (async () => {
