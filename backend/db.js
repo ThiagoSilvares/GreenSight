@@ -8,22 +8,25 @@ const ssl =
 
 const pool = new Pool({
   host: process.env.DATABASE_HOST,
-  port: Number(process.env.DATABASE_PORT || 6543),  
-  database: process.env.DATABASE_NAME,
-  user: process.env.DATABASE_USER,
+  port: Number(process.env.DATABASE_PORT || 5432), 
   password: process.env.DATABASE_PASSWORD,
   ssl,
-  max: 10,                
-  idleTimeoutMillis: 30000,   
-  connectionTimeoutMillis: 10000, 
+  max: 8,           
+  idleTimeoutMillis: 10000, 
+  connectionTimeoutMillis: 5000, 
 });
 
 (async () => {
   try {
-    console.log('✅ Conectado ao Supabase');
+    const result = await pool.query('SELECT NOW()');
+    console.log('✅ Conectado ao Supabase com sucesso em', result.rows[0].now);
   } catch (err) {
-    console.error('❌ Erro ao conectar ao Supabase:', err.message);
+    console.error('❌ Erro ao conectar ao Supabase:', err.code || err.message);
   }
 })();
+
+pool.on('error', (err) => {
+  console.error('[pg] erro no pool de conexões:', err.code || err.message);
+});
 
 module.exports = pool;
