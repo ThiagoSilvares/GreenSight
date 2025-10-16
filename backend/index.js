@@ -44,7 +44,6 @@ const corsOptions = {
   credentials: false,
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '1d', immutable: true }));
