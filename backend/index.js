@@ -14,17 +14,20 @@ const PORT = Number(process.env.PORT || 3001);
 
 app.set('trust proxy', 1);
 
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(compression());
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-const FRONT_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://green-sight.vercel.app';
+const FRONT_ORIGIN =
+  process.env.FRONTEND_ORIGIN || 'https://green-sight.vercel.app';
 const EXTRA_ORIGINS = (process.env.CORS_EXTRA_ORIGINS || '')
   .split(',')
-  .map(s => s.trim())
+  .map((s) => s.trim())
   .filter(Boolean);
 
 const ALLOWED_ORIGINS = new Set([
@@ -36,7 +39,7 @@ const ALLOWED_ORIGINS = new Set([
 
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin) return cb(null, true); 
+    if (!origin) return cb(null, true);
     if (ALLOWED_ORIGINS.has(origin)) return cb(null, true);
     if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return cb(null, true);
     return cb(new Error(`CORS bloqueado para origem: ${origin}`));
@@ -44,7 +47,9 @@ const corsOptions = {
   credentials: false,
 };
 app.use(cors(corsOptions));
+app.options('(.*)', cors(corsOptions));
 
+// ---------- Static ----------
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '1d', immutable: true }));
 
@@ -69,10 +74,14 @@ app.post('/api/login', async (req, res) => {
     if (result.rows.length > 0) {
       return res.json({ sucesso: true, usuario: result.rows[0] });
     }
-    return res.status(401).json({ sucesso: false, mensagem: 'Credenciais inválidas' });
+    return res
+      .status(401)
+      .json({ sucesso: false, mensagem: 'Credenciais inválidas' });
   } catch (err) {
     console.error('Erro ao fazer login:', err);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno do servidor' });
+    return res
+      .status(500)
+      .json({ sucesso: false, mensagem: 'Erro interno do servidor' });
   }
 });
 
@@ -142,17 +151,29 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 API escutando em porta ${PORT} (env=${process.env.NODE_ENV || 'dev'})`);
-  console.log(`🗄  DB host = ${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT || '5432'}`);
+  console.log(
+    `🚀 API escutando em porta ${PORT} (env=${process.env.NODE_ENV || 'dev'})`
+  );
+  console.log(
+    `🗄  DB host = ${process.env.DATABASE_HOST}:${
+      process.env.DATABASE_PORT || '6543'
+    }`
+  );
 });
 
 process.on('SIGTERM', async () => {
   console.log('Recebido SIGTERM, encerrando conexões do pool...');
-  try { await pool.end(); } catch (_e) {}
+  try {
+    const p = await pool._pool;
+    await p.end?.();
+  } catch (_e) {}
   process.exit(0);
 });
 process.on('SIGINT', async () => {
   console.log('Recebido SIGINT, encerrando conexões do pool...');
-  try { await pool.end(); } catch (_e) {}
+  try {
+    const p = await pool._pool;
+    await p.end?.();
+  } catch (_e) {}
   process.exit(0);
 });
