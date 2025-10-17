@@ -26,10 +26,24 @@ const API_BASE =
 
 const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
 
+const normalize = (s) =>
+  String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
 const Mapa = () => {
   const [dadosResumo, setDadosResumo] = useState(null);
   const [bueirosMapa, setBueirosMapa] = useState([]);
-  const [zonas, setZonas] = useState({ norte: 0, sul: 0, leste: 0, oeste: 0 });
+
+  const [municipios, setMunicipios] = useState({
+    scs: 0,
+    sbc: 0, 
+    sa: 0,      
+    diadema: 0
+  });
+
   const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
 
@@ -66,22 +80,19 @@ const Mapa = () => {
   }, []);
 
   useEffect(() => {
-    const [lat0, lon0] = MAP_CENTER;
-    fetch(`${API}/bueiros/por-zona?lat0=${lat0}&lon0=${lon0}`)
+    fetch(`${API}/bueiros/por-municipio`)
       .then((r) => r.json())
       .then((rows) => {
-        const z = { norte: 0, sul: 0, leste: 0, oeste: 0, outros: 0 };
-        rows?.forEach((x) => {
-          const nome = (x.zona || '').toString();
-          if (/norte/i.test(nome)) z.norte += x.total ?? 0;
-          else if (/sul/i.test(nome)) z.sul += x.total ?? 0;
-          else if (/leste/i.test(nome)) z.leste += x.total ?? 0;
-          else if (/oeste/i.test(nome)) z.oeste += x.total ?? 0;
-          else z.outros += x.total ?? 0;
-        });
-        setZonas(z);
+        const idx = new Map(
+          (rows || []).map((x) => [normalize(x?.municipio ?? x?.nome), Number(x?.total ?? x?.total_bueiros ?? 0)])
+        );
+        const scs = idx.get('sao caetano do sul') ?? 0;
+        const sbc = (idx.get('sao bernardo do campo') ?? idx.get('sao bernardo')) ?? 0;
+        const sa  = idx.get('santo andre') ?? 0;
+        const di  = idx.get('diadema') ?? 0;
+        setMunicipios({ scs, sbc, sa, diadema: di });
       })
-      .catch((err) => console.error('Erro ao buscar por zona:', err));
+      .catch((err) => console.error('Erro ao buscar por município:', err));
   }, []);
 
   const handleLogout = () => {
@@ -93,10 +104,10 @@ const Mapa = () => {
   const cards = [
     ['Total de Bueiros Cadastrados', dadosResumo?.total_mapeados ?? 0],
     ['Novos nos Últimos 30 dias', dadosResumo?.novos_30d ?? 0],
-    ['Zona Norte', zonas.norte],
-    ['Zona Sul', zonas.sul],
-    ['Zona Leste', zonas.leste],
-    ['Zona Oeste', zonas.oeste],
+    ['São Caetano do Sul', municipios.scs],
+    ['São Bernardo do Campo', municipios.sbc],
+    ['Santo André', municipios.sa],
+    ['Diadema', municipios.diadema],
   ];
 
   useEffect(() => {

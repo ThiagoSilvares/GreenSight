@@ -29,25 +29,25 @@ const API = `${String(API_BASE).replace(/\/$/, "")}/api`;
 
 const CHART_HEIGHT = 340;
 
-const ZONAS_ORDER = [
-  { key: "leste", label: "Zona Leste", color: "#3b82f6" },
-  { key: "norte", label: "Zona Norte", color: "#a855f7" },
-  { key: "oeste", label: "Zona Oeste", color: "#f59e0b" },
-  { key: "sul",   label: "Zona Sul",   color: "#ef4444" },
+const MUNICIPIOS_ORDER = [
+  { key: "sao_caetano_do_sul", label: "São Caetano do Sul",     color: "#3b82f6" },
+  { key: "sao_bernardo_do_campo", label: "São Bernardo do Campo", color: "#a855f7" },
+  { key: "santo_andre", label: "Santo André",                   color: "#f59e0b" },
+  { key: "diadema",     label: "Diadema",                       color: "#ef4444" },
 ];
 
-function LegendZonas() {
+function LegendMunicipios() {
   return (
     <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 12 }}>
-      {ZONAS_ORDER.map(z => (
-        <div key={z.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      {MUNICIPIOS_ORDER.map(m => (
+        <div key={m.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span
             style={{
-              width: 12, height: 12, background: z.color,
+              width: 12, height: 12, background: m.color,
               display: "inline-block", borderRadius: 2
             }}
           />
-          <span>{z.label}</span>
+          <span>{m.label}</span>
         </div>
       ))}
     </div>
@@ -61,8 +61,9 @@ const Graficos = () => {
   const [resumo, setResumo] = useState(null);
   const [bueiros, setBueiros] = useState([]);
   const [serieAPI, setSerieAPI] = useState(null);
-  const [zonasData, setZonasData] = useState(null);
-  const [zonasErr, setZonasErr] = useState(null);
+
+  const [municipiosData, setMunicipiosData] = useState(null);
+  const [municipiosErr, setMunicipiosErr] = useState(null);
 
   const [navOpen, setNavOpen] = useState(false);
   const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
@@ -95,16 +96,16 @@ const Graficos = () => {
   }, []);
 
   useEffect(() => {
-    fetch(`${API}/bueiros/por-zona`)
+    fetch(`${API}/bueiros/por-municipio`)
       .then(async (r) => {
-        if (!r.ok) throw new Error("endpoint /bueiros/por-zona indisponível");
+        if (!r.ok) throw new Error("endpoint /bueiros/por-municipio indisponível");
         const data = await r.json();
-        setZonasData(Array.isArray(data) ? data : []);
+        setMunicipiosData(Array.isArray(data) ? data : []);
       })
       .catch((e) => {
-        console.error("Erro /bueiros/por-zona:", e);
-        setZonasErr("Endpoint /bueiros/por-zona indisponível");
-        setZonasData(null);
+        console.error("Erro /bueiros/por-municipio:", e);
+        setMunicipiosErr("Endpoint /bueiros/por-municipio indisponível");
+        setMunicipiosData(null);
       });
   }, []);
 
@@ -162,37 +163,40 @@ const Graficos = () => {
   );
   const hasMapeados = mapeadosSerie.some((p) => p.mapeados > 0);
 
-  const zonasAll = useMemo(() => {
-    if (!Array.isArray(zonasData)) return [];
+  const municipiosAll = useMemo(() => {
+    if (!Array.isArray(municipiosData)) return [];
 
-    const acc = Object.fromEntries(ZONAS_ORDER.map(z => [z.key, 0]));
+    const acc = Object.fromEntries(MUNICIPIOS_ORDER.map(m => [m.key, 0]));
 
-    for (const z of zonasData) {
-      const nome = String(z?.zona ?? z?.nome ?? "").toLowerCase().trim();
-      const valor = Number(z?.total_bueiros ?? z?.total ?? 0);
+    for (const row of municipiosData) {
+      const nome = String(row?.municipio ?? row?.nome ?? "").toLowerCase().trim();
+      const valor = Number(row?.total ?? row?.total_bueiros ?? 0);
 
-      if (nome.includes("sem") && nome.includes("zona")) continue;
+      let key = null;
+      if (nome.includes("são caetano")) key = "sao_caetano_do_sul";
+      else if (nome.includes("bernardo")) key = "sao_bernardo_do_campo";
+      else if (nome.includes("santo andr") || nome.includes("santo andré")) key = "santo_andre";
+      else if (nome.includes("diadema")) key = "diadema";
 
-      const found = ZONAS_ORDER.find(cfg => nome.includes(cfg.key));
-      if (found) acc[found.key] += (Number.isFinite(valor) ? valor : 0);
+      if (key && Number.isFinite(valor)) acc[key] += valor;
     }
 
-    return ZONAS_ORDER.map(cfg => ({
+    return MUNICIPIOS_ORDER.map(cfg => ({
       key: cfg.key,
       name: cfg.label,
       value: acc[cfg.key] ?? 0,
       color: cfg.color,
     }));
-  }, [zonasData]);
+  }, [municipiosData]);
 
-  const zonasChart = useMemo(
-    () => zonasAll.filter(z => z.value > 0),
-    [zonasAll]
+  const municipiosChart = useMemo(
+    () => municipiosAll.filter(m => m.value > 0),
+    [municipiosAll]
   );
 
-  const totalZonas = useMemo(
-    () => zonasAll.reduce((acc, z) => acc + (Number.isFinite(z.value) ? z.value : 0), 0),
-    [zonasAll]
+  const totalMunicipios = useMemo(
+    () => municipiosAll.reduce((acc, m) => acc + (Number.isFinite(m.value) ? m.value : 0), 0),
+    [municipiosAll]
   );
 
   const handleLogout = () => {
@@ -382,31 +386,31 @@ const Graficos = () => {
 
         <div className="bg-zinc-800 p-6 rounded-lg shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Bueiros por zona</h2>
+            <h2 className="text-2xl font-semibold">Bueiros por município</h2>
             <span className="text-sm text-zinc-300">
               Total somado:{" "}
-              <span className="font-bold text-white">{totalZonas}</span>
+              <span className="font-bold text-white">{totalMunicipios}</span>
             </span>
           </div>
 
           <div className="w-full" style={{ height: CHART_HEIGHT }}>
-            {zonasErr ? (
+            {municipiosErr ? (
               <div className="h-full flex items-center justify-center text-zinc-300">
-                {zonasErr}. Certifique-se de expor <code>/bueiros/por-zona</code> no backend.
+                {municipiosErr}. Certifique-se de expor <code>/bueiros/por-municipio</code> no backend.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={zonasChart}
+                  data={municipiosChart}
                   margin={{ top: 10, right: 20, left: 0, bottom: 40 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis allowDecimals={false} />
                   <Tooltip formatter={(v) => `${v} bueiro(s)`} />
-                  <Legend verticalAlign="bottom" align="center" content={<LegendZonas />} />
+                  <Legend verticalAlign="bottom" align="center" content={<LegendMunicipios />} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
-                    {zonasChart.map((item) => (
+                    {municipiosChart.map((item) => (
                       <Cell key={item.key} fill={item.color} />
                     ))}
                   </Bar>

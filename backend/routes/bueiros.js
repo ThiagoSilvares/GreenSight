@@ -6,7 +6,7 @@ const pool = require('../db');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { randomUUID } = require('crypto'); 
+const { randomUUID } = require('crypto');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -29,14 +29,98 @@ const EXT_BY_MIME = {
 
 const imageUrl = (id) => `${PUBLIC_BASE_URL}/api/bueiros/${id}/imagem`;
 
+const MUNICIPIOS_ALVO = [
+  'São Caetano do Sul',
+  'São Bernardo do Campo',
+  'Santo André',
+  'Diadema',
+];
+
+const normalize = (s) =>
+  String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+async function contarPorMunicipio(client) {
+  const sql = `
+    WITH b_norm AS (
+      SELECT
+        id,
+        COALESCE(ts_utc, data_monitoramento) AS ts,
+        CASE
+          WHEN ST_SRID(localizacao::geometry)=0 THEN ST_SetSRID(localizacao::geometry,4326)
+          WHEN ST_SRID(localizacao::geometry)<>4326 THEN ST_Transform(localizacao::geometry,4326)
+          ELSE localizacao::geometry
+        END AS geom
+      FROM public.bueiros
+      WHERE localizacao IS NOT NULL
+    ),
+    m_norm AS (
+      SELECT
+        nome,
+        CASE
+          WHEN ST_SRID(geom)=0 THEN ST_SetSRID(geom,4326)
+          WHEN ST_SRID(geom)<>4326 THEN ST_Transform(geom,4326)
+          ELSE geom
+        END AS geom
+      FROM public.municipios
+    )
+    SELECT
+      m.nome,
+      COUNT(b.id)::int AS total,
+      COUNT(b.id) FILTER (WHERE b.ts >= NOW() - INTERVAL '30 days')::int AS novos_30d
+    FROM m_norm m
+    LEFT JOIN b_norm b
+      ON ST_Within(b.geom, m.geom)
+    GROUP BY m.nome
+    ORDER BY m.nome;
+  `;
+
+  const { rows } = await client.query(sql);
+
+  const index = new Map();
+  for (const r of rows) {
+    index.set(normalize(r.nome), {
+      municipio: r.nome,
+      total: Number(r.total) || 0,
+      novos_30d: Number(r.novos_30d) || 0
+    });
+  }
+
+  const out = [];
+  for (const alvo of MUNICIPIOS_ALVO) {
+    const key = normalize(alvo);
+    if (index.has(key)) {
+      const v = index.get(key);
+      out.push({ municipio: alvo, total: v.total, novos_30d: v.novos_30d });
+      continue;
+    }
+    let found = null;
+    for (const [k, v] of index.entries()) {
+      if (k === key) { found = v; break; }
+      if (key.startsWith('sao bernardo') && k.startsWith('sao bernardo')) { found = v; break; }
+      if (key.startsWith('santo andre') && k.startsWith('santo andre')) { found = v; break; }
+    }
+    if (found) {
+      out.push({ municipio: alvo, total: found.total, novos_30d: found.novos_30d });
+    } else {
+      out.push({ municipio: alvo, total: 0, novos_30d: 0 });
+    }
+  }
+
+  return out;
+}
+
 router.get('/bueiros', async (_req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         id,
         COALESCE(ts_utc, data_monitoramento) AS data_monitoramento,
-        ST_Y(localizacao) AS latitude,
-        ST_X(localizacao) AS longitude,
+        ST_Y(localizacao::geometry) AS latitude,
+        ST_X(localizacao::geometry) AS longitude,
         conf
       FROM public.bueiros
       WHERE localizacao IS NOT NULL
@@ -69,119 +153,12 @@ router.get('/resumo', async (_req, res) => {
   }
 });
 
-router.get('/bueiros/por-zona', async (req, res) => {
-  const lat0 = Number.parseFloat(req.query.lat0) || -23.64601;
-  const lon0 = Number.parseFloat(req.query.lon0) || -46.5759;
-
+router.get('/bueiros/por-municipio', async (_req, res) => {
   try {
-    const meta = await pool.query(`
-      SELECT
-        EXISTS (
-          SELECT 1 FROM information_schema.columns
-          WHERE table_schema='public' AND table_name='zonas' AND column_name='geom'
-        ) AS has_zonas,
-        EXISTS (
-          SELECT 1 FROM information_schema.columns
-          WHERE table_schema='public' AND table_name='municipios' AND column_name='geom'
-        ) AS has_municipios,
-        EXISTS (
-          SELECT 1 FROM pg_extension WHERE extname='unaccent'
-        ) AS has_unaccent;
-    `);
-
-    const hasZonas       = !!meta.rows[0]?.has_zonas;
-    const hasMunicipios  = !!meta.rows[0]?.has_municipios;
-    const hasUnaccent    = !!meta.rows[0]?.has_unaccent;
-
-    if (hasZonas) {
-      const whereCity = hasMunicipios
-        ? (hasUnaccent ? `unaccent(m.nome) ILIKE unaccent($1)` : `m.nome ILIKE $1`)
-        : null;
-
-      const sql = `
-        WITH city AS (
-          ${hasMunicipios ? `
-            SELECT
-              CASE
-                WHEN ST_SRID(m.geom)=0 THEN ST_SetSRID(m.geom,4326)
-                WHEN ST_SRID(m.geom)<>4326 THEN ST_Transform(m.geom,4326)
-                ELSE m.geom
-              END AS geom
-            FROM public.municipios m
-            WHERE ${whereCity}
-            LIMIT 1
-          ` : `SELECT NULL::geometry(MultiPolygon,4326) AS geom WHERE FALSE`}
-        ),
-        bueiros_norm AS (
-          SELECT b.id,
-                 CASE
-                   WHEN ST_SRID(b.localizacao)=0 THEN ST_SetSRID(b.localizacao,4326)
-                   WHEN ST_SRID(b.localizacao)<>4326 THEN ST_Transform(b.localizacao,4326)
-                   ELSE b.localizacao
-                 END AS geom
-          FROM public.bueiros b
-          WHERE b.localizacao IS NOT NULL
-        ),
-        b_in_city AS (
-          SELECT bn.*
-          FROM bueiros_norm bn
-          WHERE NOT EXISTS (SELECT 1 FROM city)
-             OR EXISTS (SELECT 1 FROM city c WHERE ST_Covers(c.geom, bn.geom))
-        ),
-        zonas_norm AS (
-          SELECT z.nome,
-                 CASE
-                   WHEN ST_SRID(z.geom)=0 THEN ST_SetSRID(z.geom,4326)
-                   WHEN ST_SRID(z.geom)<>4326 THEN ST_Transform(z.geom,4326)
-                   ELSE z.geom
-                 END AS geom
-          FROM public.zonas z
-        ),
-        contagem AS (
-          SELECT zn.nome AS zona, COUNT(bc.id)::int AS total
-          FROM zonas_norm zn
-          LEFT JOIN b_in_city bc
-            ON ST_Covers(zn.geom, bc.geom) 
-          GROUP BY zn.nome
-        ),
-        sem_zona AS (
-          SELECT 'Sem Zona'::text AS zona, COUNT(*)::int AS total
-          FROM b_in_city bc
-          WHERE NOT EXISTS (
-            SELECT 1 FROM zonas_norm zn WHERE ST_Covers(zn.geom, bc.geom)
-          )
-        )
-        SELECT * FROM contagem
-        UNION ALL
-        SELECT * FROM sem_zona
-        ORDER BY zona;
-      `;
-
-      const params = hasMunicipios ? [CITY_NAME] : [];
-      const r = await pool.query(sql, params);
-      return res.json(r.rows);
-    }
-
-    const r = await pool.query(
-      `
-      SELECT
-        CASE
-          WHEN ST_Y(localizacao) >= $1 AND ST_X(localizacao) >= $2 THEN 'Zona Norte'
-          WHEN ST_Y(localizacao)  < $1 AND ST_X(localizacao) >= $2 THEN 'Zona Leste'
-          WHEN ST_Y(localizacao)  < $1 AND ST_X(localizacao)  < $2 THEN 'Zona Sul'
-          ELSE 'Zona Oeste'
-        END AS zona,
-        COUNT(*)::int AS total
-      FROM public.bueiros
-      WHERE localizacao IS NOT NULL
-      GROUP BY zona
-      ORDER BY zona;
-      `,
-      [lat0, lon0]
-    );
-    return res.json(r.rows);
+    const rows = await contarPorMunicipio(pool);
+    return res.json(rows); 
   } catch (err) {
-    console.error('❌ Erro em /bueiros/por-zona:', err);
+    console.error('❌ Erro em /bueiros/por-municipio:', err);
     return res.status(500).json([]);
   }
 });
@@ -226,8 +203,8 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
       SELECT 
         id, conf,
         data_monitoramento,
-        ST_Y(localizacao) AS latitude,
-        ST_X(localizacao) AS longitude
+        ST_Y(localizacao::geometry) AS latitude,
+        ST_X(localizacao::geometry) AS longitude
       FROM public.bueiros
       WHERE ST_DWithin(
         localizacao::geography,
@@ -250,7 +227,10 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
               data_monitoramento = NOW(),
               conf = $3
           WHERE id = $4
-          RETURNING id, data_monitoramento, ST_Y(localizacao) AS latitude, ST_X(localizacao) AS longitude, conf;
+          RETURNING id, data_monitoramento,
+                    ST_Y(localizacao::geometry) AS latitude,
+                    ST_X(localizacao::geometry) AS longitude,
+                    conf;
           `,
           [lon, lat, conf, best.id]
         );
@@ -266,7 +246,10 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
       `
       INSERT INTO public.bueiros (id, localizacao, data_monitoramento, conf)
       VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), NOW(), $4)
-      RETURNING id, data_monitoramento, ST_Y(localizacao) AS latitude, ST_X(localizacao) AS longitude, conf;
+      RETURNING id, data_monitoramento,
+                ST_Y(localizacao::geometry) AS latitude,
+                ST_X(localizacao::geometry) AS longitude,
+                conf;
       `,
       [newId, lon, lat, Number.isFinite(conf) ? conf : null]
     );
