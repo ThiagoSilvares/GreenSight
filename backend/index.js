@@ -123,7 +123,7 @@ app.get('/api/ready', async (_req, res) => {
       host: process.env.DATABASE_HOST || null,
     });
   } catch (e) {
-    console.error('[ready] DB indisponível:', e.code || e.message);
+    console.error(' DB indisponível:', e.code || e.message);
     res.status(503).json({
       ok: false,
       db: 'down',
@@ -135,7 +135,7 @@ app.get('/api/ready', async (_req, res) => {
 
 app.get('/', (_req, res) => {
   res.send(
-    `API ativa!<br>DB host: ${process.env.DATABASE_HOST || 'env host not set'}`
+    `API ativa! DB host: ${process.env.DATABASE_HOST || 'env host not set'}`
   );
 });
 
@@ -150,10 +150,10 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(
-    `🚀 API escutando em porta ${PORT} (env=${process.env.NODE_ENV || 'dev'})`
+    `API escutando em porta ${PORT} (env=${process.env.NODE_ENV || 'dev'})`
   );
   console.log(
-    `🗄  DB host = ${process.env.DATABASE_HOST}:${
+    `DB host = ${process.env.DATABASE_HOST}:${
       process.env.DATABASE_PORT || '6543'
     }`
   );

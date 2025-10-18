@@ -25,20 +25,20 @@ async function resolveIPv4(host) {
       dns.resolve4(host, (e, a) => (e ? rej(e) : res(a)))
     );
     if (addrs?.length) {
-      console.log('[dns] IPv4 (resolve4):', addrs[0]);
+      console.log(' IPv4 (resolve4):', addrs[0]);
       return addrs[0];
     }
   } catch (e) {
-    console.warn('[dns] resolve4 falhou:', e.message);
+    console.warn(' resolve4 falhou:', e.message);
   }
   try {
     const addr = await new Promise((res, rej) =>
       dns.lookup(host, { family: 4 }, (e, a) => (e ? rej(e) : res(a)))
     );
-    console.log('[dns] IPv4 (lookup):', addr);
+    console.log(' IPv4 (lookup):', addr);
     return addr;
   } catch (e) {
-    console.warn('[dns] lookup v4 falhou:', e.message, '→ usando hostname direto');
+    console.warn(' lookup v4 falhou:', e.message, ' usando hostname direto');
     return host; 
   }
 }
@@ -70,7 +70,7 @@ async function initPool({ reason = 'boot' } = {}) {
     const pool = makePool(hostResolved);
 
     pool.on('error', (err) => {
-      console.error('[pg] erro no pool:', err.code || err.message);
+      console.error(' erro no pool:', err.code || err.message);
     });
 
     try {
@@ -107,7 +107,7 @@ async function query(...args) {
     return await pool.query(...args);
   } catch (e) {
     if (TRANSIENT_NET_ERRORS.has(e.code)) {
-      console.warn('[pg] erro de rede:', e.code, '→ re-resolvendo & recriando pool');
+      console.warn(' erro de rede:', e.code, ' resolvendo & recriando pool');
       await initPool({ reason: `recover-${e.code}` });
       const p2 = await getPool();
       return await p2.query(...args);
