@@ -30,10 +30,10 @@ const API = `${String(API_BASE).replace(/\/$/, "")}/api`;
 const CHART_HEIGHT = 340;
 
 const MUNICIPIOS_ORDER = [
-  { key: "sao_caetano_do_sul", label: "São Caetano do Sul",     color: "#3b82f6" },
-  { key: "sao_bernardo_do_campo", label: "São Bernardo do Campo", color: "#a855f7" },
-  { key: "santo_andre", label: "Santo André",                   color: "#f59e0b" },
-  { key: "diadema",     label: "Diadema",                       color: "#ef4444" },
+  { key: "sao_caetano_do_sul", label: "São Caetano do Sul",     color: "#86F773"},
+  { key: "sao_bernardo_do_campo", label: "São Bernardo do Campo", color: "#37E727" },
+  { key: "santo_andre", label: "Santo André",                   color: "#00AC00" },
+  { key: "diadema",     label: "Diadema",                       color: "#00721C" },
 ];
 
 function LegendMunicipios() {
@@ -54,6 +54,82 @@ function LegendMunicipios() {
   );
 }
 
+function onlyDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function buildConfHistFromArray(arr, field = "conf") {
+  const buckets = [
+    { key: "0-20",   label: "0–20%",   min: 0.0,  max: 0.2,  count: 0 },
+    { key: "20-40",  label: "20–40%",  min: 0.2,  max: 0.4,  count: 0 },
+    { key: "40-60",  label: "40–60%",  min: 0.4,  max: 0.6,  count: 0 },
+    { key: "60-80",  label: "60–80%",  min: 0.6,  max: 0.8,  count: 0 },
+    { key: "80-100", label: "80–100%", min: 0.8,  max: 1.01, count: 0 },
+  ];
+
+  for (const it of arr || []) {
+    const v = Number(it?.[field]);
+    if (!Number.isFinite(v)) continue;
+    if (v < 0 || v > 1.01) continue;
+    const b =
+      v < 0.2 ? 0 :
+      v < 0.4 ? 1 :
+      v < 0.6 ? 2 :
+      v < 0.8 ? 3 : 4;
+    buckets[b].count += 1;
+  }
+
+  const total = buckets.reduce((s, b) => s + b.count, 0) || 1;
+  return {
+    total,
+    data: buckets.map(b => ({
+      faixa: b.label,
+      count: b.count,
+      pct: Math.round((b.count / total) * 100),
+      key: b.key,
+    }))
+  };
+}
+
+const CONF_COLORS = {
+  "0-20":   "#90FF17",
+  "20-40":  "#00C16C",
+  "40-60":  "#00755C",
+  "60-80":  "#016B2B",
+  "80-100": "#365415",
+};
+
+const CONF_ORDER = [
+  { key: "0-20",   label: "0–20%" },
+  { key: "20-40",  label: "20–40%" },
+  { key: "40-60",  label: "40–60%" },
+  { key: "60-80",  label: "60–80%" },
+  { key: "80-100", label: "80–100%" },
+];
+
+function LegendConfianca() {
+  return (
+    <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 12 }}>
+      {CONF_ORDER.map(item => (
+        <div key={item.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 12, height: 12, background: CONF_COLORS[item.key],
+              display: "inline-block", borderRadius: 2
+            }}
+          />
+          <span>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const Graficos = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +140,9 @@ const Graficos = () => {
 
   const [municipiosData, setMunicipiosData] = useState(null);
   const [municipiosErr, setMunicipiosErr] = useState(null);
+
+  const [confData, setConfData] = useState(null);
+  const [confErr, setConfErr] = useState(null);
 
   const [navOpen, setNavOpen] = useState(false);
   const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
@@ -110,25 +189,86 @@ const Graficos = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function getConf() {
+      const tries = [
+        `${API}/analiticos/deteccoes/conf-hist`,
+        `${API}/deteccoes/resumo_conf`,
+      ];
+
+      for (const url of tries) {
+        try {
+          const r = await fetch(url);
+          if (!r.ok) continue;
+          const data = await r.json();
+          if (cancelled) return;
+          if (Array.isArray(data)) {
+            const built = buildConfHistFromArray(data, "conf");
+            setConfData(built);
+            setConfErr(null);
+            return;
+          }
+          if (data?.data && Array.isArray(data.data)) {
+            setConfData({
+              total: Number(data.total ?? data.data.reduce((s, d) => s + Number(d.count || 0), 0)),
+              data: data.data.map(d => ({
+                faixa: d.faixa || d.label,
+                count: Number(d.count || 0),
+                pct: Number(d.pct || Math.round(((d.count || 0) / (data.total || 1)) * 100)),
+                key: d.key || String(d.faixa || d.label || ""),
+              })),
+            });
+            setConfErr(null);
+            return;
+          }
+        } catch (_) {}
+      }
+
+      try {
+        const r = await fetch(`${API}/deteccoes?limit=2000`);
+        if (r.ok) {
+          const list = await r.json();
+          if (!cancelled) {
+            const built = buildConfHistFromArray(Array.isArray(list) ? list : [], "conf");
+            setConfData(built);
+            setConfErr(null);
+            return;
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const r = await fetch(`${API}/bueiros`);
+        if (r.ok) {
+          const list = await r.json();
+          if (!cancelled) {
+            const built = buildConfHistFromArray(Array.isArray(list) ? list : [], "conf");
+            setConfData(built);
+            setConfErr(null);
+            return;
+          }
+        }
+      } catch (e) {}
+
+      if (!cancelled) setConfErr("Não foi possível obter dados de confiança.");
+    }
+
+    getConf();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     const onScroll = () => setNavOpen(false);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  function onlyDate(iso) {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return null;
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
   const mapeadosSerie = useMemo(() => {
     if (Array.isArray(serieAPI) && serieAPI.length) {
       return serieAPI.map((p) => {
         const d = (p.dia || p.DIA || p.date || "").toString().slice(0, 10);
-        const [yyyy, mm, dd] = d.split("-");
+        const [, mm, dd] = d.split("-");
         return { dia: `${dd}/${mm}`, mapeados: Number(p.total_no_dia ?? p.total ?? p.count ?? 0) };
       });
     }
@@ -153,7 +293,7 @@ const Graficos = () => {
       if (dia && base[dia] !== undefined) base[dia] += 1;
     }
     return dias.map((d) => {
-      const [yyyy, mm, dd] = d.split("-");
+      const [, mm, dd] = d.split("-");
       return { dia: `${dd}/${mm}`, mapeados: base[d] };
     });
   }, [serieAPI, bueiros]);
@@ -379,6 +519,53 @@ const Graficos = () => {
             ) : (
               <div className="h-full flex items-center justify-center text-zinc-300">
                 Sem mapeamentos nesse período.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-zinc-800 p-6 rounded-lg shadow-lg mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">
+              Distribuição de confiança (qualidade das detecções)
+            </h2>
+            <span className="text-sm text-zinc-300">
+              Total de detecções:{" "}
+              <span className="font-bold text-white">{confData?.total ?? 0}</span>
+            </span>
+          </div>
+
+          <div className="w-full" style={{ height: CHART_HEIGHT }}>
+            {confErr ? (
+              <div className="h-full flex items-center justify-center text-zinc-300">
+                {confErr}
+              </div>
+            ) : confData?.data?.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={confData.data}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 56 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="faixa" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip
+                    formatter={(value, name, props) => {
+                      const pct = props?.payload?.pct ?? 0;
+                      return [`${value} detecções (${pct}%)`, "Contagem"];
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" align="center" content={<LegendConfianca />} />
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    {confData.data.map((d) => (
+                      <Cell key={d.key} fill={CONF_COLORS[d.key] || "#22c55e"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-zinc-300">
+                Sem dados de confiança disponíveis.
               </div>
             )}
           </div>
