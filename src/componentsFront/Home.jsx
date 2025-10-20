@@ -273,7 +273,7 @@ const Home = () => {
             <p className="text-sm">Geolocalização via GPS integrada a armazenamento em nuvem, garantindo a associação das imagens às coordenadas exatas e à segurança dos dados coletados.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
-            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">Inteligência Artificial</div>
+            <div className="bg-zinc-400 text-white font-bold py-6 mb-4 rounded">IA</div>
             <p className="text-sm">Algoritmos de visão computacional processam as imagens para identificar automaticamente a existência e posição dos bueiros, alimentando a base geoespacial do sistema.</p>
           </div>
           <div className="bg-zinc-200 rounded-md shadow-lg p-9 text-black min-h-[230px] flex flex-col justify-start">
