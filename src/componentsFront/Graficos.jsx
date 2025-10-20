@@ -174,7 +174,7 @@ const Graficos = () => {
   useEffect(() => {
     fetch(`${API}/bueiros_por_dia`)
       .then(async (r) => {
-        if (!r.ok) throw new Error("endpoint /bueiros_por_dia indisponível");
+        if (!r.ok) throw new Error("Não foi possível obter dados de bueiros por dia.");
         const data = await r.json();
         setSerieAPI(Array.isArray(data) ? data : null);
       })
@@ -189,13 +189,13 @@ const Graficos = () => {
   useEffect(() => {
     fetch(`${API}/bueiros/por-municipio`)
       .then(async (r) => {
-        if (!r.ok) throw new Error("endpoint /bueiros/por-municipio indisponível");
+        if (!r.ok) throw new Error("Não foi possível obter dados de bueiros por município.");
         const data = await r.json();
         setMunicipiosData(Array.isArray(data) ? data : []);
       })
       .catch((e) => {
         console.error("Erro /bueiros/por-municipio:", e);
-        setMunicipiosErr("Endpoint /bueiros/por-municipio indisponível");
+        setMunicipiosErr("Não foi possível obter dados de bueiros por município.");
         setMunicipiosData(null);
       });
   }, []);
