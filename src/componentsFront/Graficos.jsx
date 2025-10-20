@@ -64,6 +64,35 @@ function LegendMunicipios() {
   );
 }
 
+function MultiLineTick({ x, y, payload, maxChars = 12, fontSize = 10, fill = "#e4e4e7", lineGap = 2 }) {
+  const full = String(payload?.value ?? "");
+  const words = full.split(" ").filter(Boolean);
+
+  const lines = [];
+  let current = "";
+  for (const w of words) {
+    const test = current ? `${current} ${w}` : w;
+    if (test.length <= maxChars) current = test;
+    else {
+      if (current) lines.push(current);
+      current = w;
+    }
+  }
+  if (current) lines.push(current);
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text textAnchor="middle" fill={fill} fontSize={fontSize}>
+        {lines.map((line, i) => (
+          <tspan key={i} x={0} dy={i === 0 ? fontSize + 2 : fontSize + lineGap}>
+            {line}
+          </tspan>
+        ))}
+      </text>
+    </g>
+  );
+}
+
 function onlyDate(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
@@ -566,7 +595,7 @@ const Graficos = () => {
                   barCategoryGap={isMobile ? "30%" : "20%"}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="faixa" tick={tickStyle} interval={isMobile ? 0 : 0} />
+                  <XAxis dataKey="faixa" tick={tickStyle} interval={0} />
                   <YAxis allowDecimals={false} tick={tickStyle} />
                   <Tooltip
                     formatter={(value, name, props) => {
@@ -609,11 +638,21 @@ const Graficos = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={municipiosChart}
-                  margin={{ top: 8, right: isMobile ? 8 : 16, left: isMobile ? 0 : 8, bottom: 8 }}
+                  margin={{
+                    top: 8,
+                    right: isMobile ? 8 : 16,
+                    left: isMobile ? 0 : 8,
+                    bottom: isMobile ? 28 : 12,
+                  }}
                   barCategoryGap={isMobile ? "30%" : "20%"}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={tickStyle} interval={isMobile ? 0 : 0} />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    tickLine={false}
+                    tick={<MultiLineTick maxChars={isMobile ? 12 : 18} fontSize={isMobile ? 11 : 12} />}
+                  />
                   <YAxis allowDecimals={false} tick={tickStyle} />
                   <Tooltip formatter={(v) => `${v} bueiro(s)`} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
