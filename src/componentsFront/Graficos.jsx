@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  BarChart, Bar, Cell, Legend
+  BarChart, Bar, Cell
 } from "recharts";
 import {
   FaBars,
@@ -27,7 +27,17 @@ const API_BASE =
 
 const API = `${String(API_BASE).replace(/\/$/, "")}/api`;
 
-const CHART_HEIGHT = 340;
+function useIsMobile(bp = 480) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= bp : false
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= bp);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [bp]);
+  return isMobile;
+}
 
 const MUNICIPIOS_ORDER = [
   { key: "sao_caetano_do_sul", label: "São Caetano do Sul",     color: "#86F773"},
@@ -38,7 +48,7 @@ const MUNICIPIOS_ORDER = [
 
 function LegendMunicipios() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 12 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16, marginTop: 12 }}>
       {MUNICIPIOS_ORDER.map(m => (
         <div key={m.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span
@@ -114,7 +124,7 @@ const CONF_ORDER = [
 
 function LegendConfianca() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 12 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16, marginTop: 12 }}>
       {CONF_ORDER.map(item => (
         <div key={item.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span
@@ -133,6 +143,8 @@ function LegendConfianca() {
 const Graficos = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile(480);
+  const CHART_HEIGHT = isMobile ? 260 : 340;
 
   const [resumo, setResumo] = useState(null);
   const [bueiros, setBueiros] = useState([]);
@@ -345,6 +357,9 @@ const Graficos = () => {
     navigate("/");
   };
 
+  const tickStyle = { fontSize: isMobile ? 10 : 12 };
+  const dateTickGap = isMobile ? 24 : 8;
+
   return (
     <div className="bg-black min-h-screen text-white font-sans">
       <header className="bg-black/70 backdrop-blur-md fixed top-0 w-full z-50 px-4 md:px-8 py-3 flex items-center justify-between shadow-md">
@@ -478,17 +493,17 @@ const Graficos = () => {
         </div>
       </header>
 
-      <main className="pt-20 md:pt-24 px-6 md:px-10 pb-20 max-w-5xl mx-auto">
-        <h1 className="text-3xl md:text-5xl font-bold mb-10 text-left">
+      <main className="pt-20 md:pt-24 px-4 md:px-10 pb-20 max-w-5xl mx-auto">
+        <h1 className="text-3xl md:text-5xl font-bold mb-6 md:mb-10 text-left">
           Indicadores de Mapeamento
         </h1>
 
-        <div className="bg-zinc-800 p-6 rounded-lg shadow-lg mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">
+        <section className="bg-zinc-800 p-4 md:p-6 rounded-lg shadow-lg mb-8 md:mb-10">
+          <div className="flex items-start md:items-center justify-between mb-3 md:mb-4">
+            <h2 className="text-xl md:text-2xl font-semibold">
               Bueiros mapeados por dia (últimos 30 dias)
             </h2>
-            <span className="text-sm text-zinc-300">
+            <span className="text-xs md:text-sm text-zinc-300">
               Total mapeados:{" "}
               <span className="font-bold text-white">{totalAcumulado}</span>
             </span>
@@ -497,7 +512,10 @@ const Graficos = () => {
           <div className="w-full" style={{ height: CHART_HEIGHT }}>
             {hasMapeados ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mapeadosSerie}>
+                <AreaChart
+                  data={mapeadosSerie}
+                  margin={{ top: 8, right: isMobile ? 8 : 16, left: isMobile ? 0 : 8, bottom: 8 }}
+                >
                   <defs>
                     <linearGradient id="gMap" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
@@ -505,8 +523,8 @@ const Graficos = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="dia" />
-                  <YAxis allowDecimals={false} />
+                  <XAxis dataKey="dia" tick={tickStyle} minTickGap={dateTickGap} />
+                  <YAxis allowDecimals={false} tick={tickStyle} />
                   <Tooltip />
                   <Area
                     type="monotone"
@@ -517,19 +535,19 @@ const Graficos = () => {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-zinc-300">
+              <div className="h-full flex items-center justify-center text-zinc-300 text-sm md:text-base">
                 Sem mapeamentos nesse período.
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        <div className="bg-zinc-800 p-6 rounded-lg shadow-lg mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">
+        <section className="bg-zinc-800 p-4 md:p-6 rounded-lg shadow-lg mb-8 md:mb-10">
+          <div className="flex items-start md:items-center justify-between mb-3 md:mb-4">
+            <h2 className="text-xl md:text-2xl font-semibold">
               Distribuição de confiança (qualidade das detecções)
             </h2>
-            <span className="text-sm text-zinc-300">
+            <span className="text-xs md:text-sm text-zinc-300">
               Total de detecções:{" "}
               <span className="font-bold text-white">{confData?.total ?? 0}</span>
             </span>
@@ -537,25 +555,25 @@ const Graficos = () => {
 
           <div className="w-full" style={{ height: CHART_HEIGHT }}>
             {confErr ? (
-              <div className="h-full flex items-center justify-center text-zinc-300">
+              <div className="h-full flex items-center justify-center text-zinc-300 text-sm md:text-base">
                 {confErr}
               </div>
             ) : confData?.data?.length ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={confData.data}
-                  margin={{ top: 10, right: 20, left: 0, bottom: 56 }}
+                  margin={{ top: 8, right: isMobile ? 8 : 16, left: isMobile ? 0 : 8, bottom: 8 }}
+                  barCategoryGap={isMobile ? "30%" : "20%"}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="faixa" />
-                  <YAxis allowDecimals={false} />
+                  <XAxis dataKey="faixa" tick={tickStyle} interval={isMobile ? 0 : 0} />
+                  <YAxis allowDecimals={false} tick={tickStyle} />
                   <Tooltip
                     formatter={(value, name, props) => {
                       const pct = props?.payload?.pct ?? 0;
                       return [`${value} detecções (${pct}%)`, "Contagem"];
                     }}
                   />
-                  <Legend verticalAlign="bottom" align="center" content={<LegendConfianca />} />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     {confData.data.map((d) => (
                       <Cell key={d.key} fill={CONF_COLORS[d.key] || "#22c55e"} />
@@ -564,17 +582,19 @@ const Graficos = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-zinc-300">
+              <div className="h-full flex items-center justify-center text-zinc-300 text-sm md:text-base">
                 Sem dados de confiança disponíveis.
               </div>
             )}
           </div>
-        </div>
 
-        <div className="bg-zinc-800 p-6 rounded-lg shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Bueiros por município</h2>
-            <span className="text-sm text-zinc-300">
+          <LegendConfianca />
+        </section>
+
+        <section className="bg-zinc-800 p-4 md:p-6 rounded-lg shadow-lg">
+          <div className="flex items-start md:items-center justify-between mb-3 md:mb-4">
+            <h2 className="text-xl md:text-2xl font-semibold">Bueiros por município</h2>
+            <span className="text-xs md:text-sm text-zinc-300">
               Total somado:{" "}
               <span className="font-bold text-white">{totalMunicipios}</span>
             </span>
@@ -582,20 +602,20 @@ const Graficos = () => {
 
           <div className="w-full" style={{ height: CHART_HEIGHT }}>
             {municipiosErr ? (
-              <div className="h-full flex items-center justify-center text-zinc-300">
+              <div className="h-full flex items-center justify-center text-zinc-300 text-sm md:text-base">
                 {municipiosErr}. Certifique-se de expor <code>/bueiros/por-municipio</code> no backend.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={municipiosChart}
-                  margin={{ top: 10, right: 20, left: 0, bottom: 40 }}
+                  margin={{ top: 8, right: isMobile ? 8 : 16, left: isMobile ? 0 : 8, bottom: 8 }}
+                  barCategoryGap={isMobile ? "30%" : "20%"}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis allowDecimals={false} />
+                  <XAxis dataKey="name" tick={tickStyle} interval={isMobile ? 0 : 0} />
+                  <YAxis allowDecimals={false} tick={tickStyle} />
                   <Tooltip formatter={(v) => `${v} bueiro(s)`} />
-                  <Legend verticalAlign="bottom" align="center" content={<LegendMunicipios />} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     {municipiosChart.map((item) => (
                       <Cell key={item.key} fill={item.color} />
@@ -605,7 +625,9 @@ const Graficos = () => {
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+
+          <LegendMunicipios />
+        </section>
       </main>
 
       {mostrarConfirmacaoLogout && (
