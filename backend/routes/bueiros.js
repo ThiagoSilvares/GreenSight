@@ -11,8 +11,7 @@ const { randomUUID } = require('crypto');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-const CITY_NAME = process.env.CITY_NAME || 'São Caetano do Sul';
-const RADIUS_M = Number(process.env.BUEIRO_RADIUS_M || 8);
+const RADIUS_M = Number(process.env.BUEIRO_RADIUS_M || 10);
 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
 
@@ -200,9 +199,10 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
 
     const near = await pool.query(
       `
-      SELECT 
-        id, conf,
-        data_monitoramento,
+      SELECT
+        id,
+        conf,
+        COALESCE(ts_utc, data_monitoramento) AS ts_ref,
         ST_Y(localizacao::geometry) AS latitude,
         ST_X(localizacao::geometry) AS longitude
       FROM public.bueiros
@@ -211,34 +211,35 @@ router.post('/bueiros', upload.single('imagem'), async (req, res) => {
         ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
         $3
       )
-      ORDER BY conf DESC NULLS LAST, id ASC
+      ORDER BY ts_ref DESC NULLS LAST, id DESC
       LIMIT 1;
       `,
       [lon, lat, RADIUS_M]
     );
 
     if (near.rows.length) {
-      const best = near.rows[0];
-      if (Number.isFinite(conf) && (!Number.isFinite(best.conf) || conf > Number(best.conf))) {
-        const upd = await pool.query(
-          `
-          UPDATE public.bueiros
-          SET localizacao = ST_SetSRID(ST_MakePoint($1, $2), 4326),
-              data_monitoramento = NOW(),
-              conf = $3
-          WHERE id = $4
-          RETURNING id, data_monitoramento,
-                    ST_Y(localizacao::geometry) AS latitude,
-                    ST_X(localizacao::geometry) AS longitude,
-                    conf;
-          `,
-          [lon, lat, conf, best.id]
-        );
-        await saveImageFor(upd.rows[0].id, file);
-        return res.status(200).json({ sucesso: true, bueiro: upd.rows[0], updated: true });
-      }
-      await saveImageFor(best.id, file);
-      return res.status(200).json({ sucesso: true, bueiro: best, updated: false });
+      const target = near.rows[0];
+      const nextConf = Number.isFinite(conf)
+        ? conf
+        : (Number.isFinite(target.conf) ? target.conf : null);
+
+      const upd = await pool.query(
+        `
+        UPDATE public.bueiros
+        SET localizacao = ST_SetSRID(ST_MakePoint($1, $2), 4326),
+            data_monitoramento = NOW(),
+            conf = $3
+        WHERE id = $4
+        RETURNING id, data_monitoramento,
+                  ST_Y(localizacao::geometry) AS latitude,
+                  ST_X(localizacao::geometry) AS longitude,
+                  conf;
+        `,
+        [lon, lat, nextConf, target.id]
+      );
+
+      await saveImageFor(upd.rows[0].id, file);
+      return res.status(200).json({ sucesso: true, bueiro: upd.rows[0], replaced: true });
     }
 
     const newId = randomUUID();
