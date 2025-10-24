@@ -178,7 +178,7 @@ const Relatos = () => {
 
       if (!resp.ok) {
         const raw = await resp.text();
-        let msg = "Relato não publicado por decisão dos admnistradores.";
+        let msg = "Relato não publicado por decisão dos administradores.";
         try {
           const j = JSON.parse(raw);
           if (j?.message) msg = j.message;
