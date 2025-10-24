@@ -41,9 +41,9 @@ function useIsMobile(bp = 480) {
 
 const MUNICIPIOS_ORDER = [
   { key: "sao_caetano_do_sul", label: "São Caetano do Sul",     color: "#86F773"},
-  { key: "sao_bernardo_do_campo", label: "São Bernardo do Campo", color: "#37E727" },
-  { key: "santo_andre", label: "Santo André",                   color: "#00AC00" },
-  { key: "diadema",     label: "Diadema",                       color: "#00721C" },
+  { key: "sao_bernardo_do_campo", label: "São Bernardo do Campo", color: "#ffa02e" },
+  { key: "santo_andre", label: "Santo André",                   color: "#ad2003" },
+  { key: "diadema",     label: "Diadema",                       color: "#2f2bad" },
 ];
 
 function LegendMunicipios() {
