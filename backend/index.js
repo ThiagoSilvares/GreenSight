@@ -62,6 +62,9 @@ app.use('/api', bueirosRoutes);
 const relatosRoutes = require('./routes/relatos');
 app.use('/api', relatosRoutes);
 
+const contactRoutes = require('./routes/contact');
+app.use('/api', contactRoutes);
+
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
   try {

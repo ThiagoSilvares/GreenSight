@@ -14,11 +14,61 @@ import {
 import LogoEscrita from '../assets/LogoEscritaGreenSight.png';
 import Enchente from '../assets/enchente.png';
 
+const API_BASE =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  process.env.REACT_APP_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  'http://localhost:3001';
+const API = `${String(API_BASE).replace(/\/$/, '')}/api`;
+
 const Home = () => {
   const navigate = useNavigate();
   const isUsuarioLogado = !!localStorage.getItem('usuarioLogado');
   const [navOpen, setNavOpen] = useState(false);
   const [mostrarConfirmacaoLogout, setMostrarConfirmacaoLogout] = useState(false);
+
+  const [cName, setCName] = useState('');
+  const [cEmail, setCEmail] = useState('');
+  const [cMsg, setCMsg] = useState('');
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
+  function isEmail(v = '') {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setFeedback(null);
+
+    if (!cName || !cEmail || !cMsg) {
+      setFeedback({ type: 'error', text: 'Preencha nome, e-mail e mensagem.' });
+      return;
+    }
+    if (!isEmail(cEmail)) {
+      setFeedback({ type: 'error', text: 'E-mail inválido.' });
+      return;
+    }
+
+    try {
+      setSending(true);
+      const resp = await fetch(`${API}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: cName, email: cEmail, message: cMsg }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data?.ok) throw new Error(data?.error || 'Falha ao enviar');
+      setFeedback({ type: 'success', text: 'Mensagem enviada com sucesso! Obrigado!' });
+      setCName('');
+      setCEmail('');
+      setCMsg('');
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || 'Não foi possível enviar agora.' });
+    } finally {
+      setSending(false);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setNavOpen(false);
@@ -27,9 +77,9 @@ const Home = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("usuarioLogado");
-    localStorage.removeItem("usuario");
-    navigate("/");
+    localStorage.removeItem('usuarioLogado');
+    localStorage.removeItem('usuario');
+    navigate('/');
   };
 
   const year = new Date().getFullYear();
@@ -131,7 +181,7 @@ const Home = () => {
                   <button
                     onClick={() => {
                       setNavOpen(false);
-                      navigate("/cadastro-bueiros");
+                      navigate('/cadastro-bueiros');
                     }}
                     className="w-full text-left flex items-center gap-2 py-2 hover:text-green-500"
                   >
@@ -288,27 +338,39 @@ const Home = () => {
         <p className="text-gray-300 mb-8">
           Tem alguma dúvida, sugestão ou gostaria de colaborar com o Green Sight? Entre em contato conosco!
         </p>
-        <form className="bg-zinc-200 rounded-md shadow-md p-6 text-black space-y-4 max-w-xl mx-auto">
+        <form onSubmit={handleContactSubmit} className="bg-zinc-200 rounded-md shadow-md p-6 text-black space-y-4 max-w-xl mx-auto">
           <input
             type="text"
             placeholder="Seu nome"
+            value={cName}
+            onChange={(e) => setCName(e.target.value)}
             className="w-full p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           <input
             type="email"
             placeholder="Seu e-mail"
+            value={cEmail}
+            onChange={(e) => setCEmail(e.target.value)}
             className="w-full p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           <textarea
             placeholder="Sua mensagem"
             rows="4"
+            value={cMsg}
+            onChange={(e) => setCMsg(e.target.value)}
             className="w-full p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
-          ></textarea>
+          />
+          {feedback && (
+            <div className={feedback.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+              {feedback.text}
+            </div>
+          )}
           <button
             type="submit"
-            className="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-6 rounded-full transition duration-200"
+            disabled={sending}
+            className={`bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-6 rounded-full transition duration-200 ${sending ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            Enviar Mensagem
+            {sending ? 'Enviando…' : 'Enviar Mensagem'}
           </button>
         </form>
       </section>

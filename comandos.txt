@@ -15,6 +15,7 @@ Comandos:
 - npm install recharts --legacy-peer-deps
 - npm run build
 - npm install helmet@^7
+- npm i resend express-rate-limit
 
 Rodar:
 
