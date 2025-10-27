@@ -81,51 +81,51 @@ router.get('/relatos', async (_req, res) => {
   }
 });
 
-// router.post('/relatos', upload.single('image'), async (req, res) => {
-//   try {
-//     console.log('[relatos:create] fields:', req.body);
-//     console.log('[relatos:create] file:', req.file?.fieldname);
+router.post('/relatos', upload.single('image'), async (req, res) => {
+  try {
+    console.log('[relatos:create] fields:', req.body);
+    console.log('[relatos:create] file:', req.file?.fieldname);
 
-//     const author = norm(req.body.author);
-//     const address = makeAddress({
-//       address: req.body.address,
-//       rua: req.body.rua,
-//       numero: req.body.numero,
-//       bairro: req.body.bairro,
-//     });
-//     const content = norm(req.body.content) || null;
+    const author = norm(req.body.author);
+    const address = makeAddress({
+      address: req.body.address,
+      rua: req.body.rua,
+      numero: req.body.numero,
+      bairro: req.body.bairro,
+    });
+    const content = norm(req.body.content) || null;
 
-//     if (!author) {
-//       return res.status(400).json({ message: 'Informe o autor do relato.' });
-//     }
-//     if (!address) {
-//       return res.status(400).json({
-//         message: 'Informe o endereço (rua, número e bairro).',
-//         debug: { received: req.body },
-//       });
-//     }
+    if (!author) {
+      return res.status(400).json({ message: 'Informe o autor do relato.' });
+    }
+    if (!address) {
+      return res.status(400).json({
+        message: 'Informe o endereço (rua, número e bairro).',
+        debug: { received: req.body },
+      });
+    }
 
-//     let imagePath = null;
-//     if (req.file) {
-//       imagePath = `/uploads/${path.basename(req.file.path)}`;
-//     }
+    let imagePath = null;
+    if (req.file) {
+      imagePath = `/uploads/${path.basename(req.file.path)}`;
+    }
 
-//     const { rows } = await pool.query(
-//       `INSERT INTO public.relatos (author, address, content, image_path)
-//        VALUES ($1, $2, $3, $4)
-//        RETURNING id, author, address, content, image_path, created_at`,
-//       [author, address, content, imagePath]
-//     );
+    const { rows } = await pool.query(
+      `INSERT INTO public.relatos (author, address, content, image_path)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, author, address, content, image_path, created_at`,
+      [author, address, content, imagePath]
+    );
 
-//     return res.status(201).json(rows[0]);
-//   } catch (err) {
-//     console.error('Erro ao criar relato:', err);
-//     if (err.name === 'MulterError') {
-//       return res.status(400).json({ message: err.message || 'Falha no upload.' });
-//     }
-//     return res.status(500).json({ message: 'Erro ao salvar relato' });
-//   }
-// });
+    return res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar relato:', err);
+    if (err.name === 'MulterError') {
+      return res.status(400).json({ message: err.message || 'Falha no upload.' });
+    }
+    return res.status(500).json({ message: 'Erro ao salvar relato' });
+  }
+});
 
 router.delete('/relatos/:id', isAdmin, async (req, res) => {
   try {
