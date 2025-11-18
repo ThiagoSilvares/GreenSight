@@ -244,7 +244,7 @@ const Home = () => {
 
       <section className="text-center px-6 pt-20 md:pt-40 pb-8 md:pb-8 max-w-5xl mx-auto">
         <h2 className="text-4xl md:text-6xl font-extrabold mb-6 leading-snug">
-          Monitoramento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras
+          Mapeamento Inteligente para <br className="hidden sm:block" /> Cidades Mais Limpas e Seguras
         </h2>
         <p className="text-gray-300 max-w-3xl mx-auto mb-8 text-sm md:text-base">
           O Green Sight utiliza tecnologia de câmeras e análise de dados para o mapeamento de bueiros em tempo real,
