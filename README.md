@@ -76,7 +76,7 @@ O fluxo da aplicação funciona da seguinte forma:
 
 Visualização geográfica dos bueiros identificados pelo sistema.
 
-![Mapa](./img/mapaBueiro.jpeg)
+![Mapa](./src/img/mapaBueiro.jpeg)
 
 ---
 
@@ -86,7 +86,7 @@ Identificação automática de bueiros através de visão computacional.
 
 ![YOLO](./src/img/bueiro.jpeg)
 
-![YOLO](./img/camera.jpeg)
+![YOLO](./src/img/camera.jpeg)
 
 ---
 
@@ -94,7 +94,7 @@ Identificação automática de bueiros através de visão computacional.
 
 Tela para relatos da população referentes ao status e localização dos bueiros.
 
-![Relatos](./img/relatosComunidade.jpeg)
+![Relatos](./src/img/relatosComunidade.jpeg)
 
 ---
 
@@ -102,7 +102,7 @@ Tela para relatos da população referentes ao status e localização dos bueiro
 
 Gráficos e métricas em tempo real para acompanhamento urbano.
 
-![Graficos](./img/graficosDashboard.jpeg)
+![Graficos](./src/img/graficosDashboard.jpeg)
 
 ---
 
