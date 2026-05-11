@@ -84,7 +84,7 @@ Visualização geográfica dos bueiros identificados pelo sistema.
 
 Identificação automática de bueiros através de visão computacional.
 
-![YOLO](./img/bueiro.jpeg)
+![YOLO](./src/img/bueiro.jpeg)
 
 ![YOLO](./img/camera.jpeg)
 
